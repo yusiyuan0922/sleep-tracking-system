@@ -12,6 +12,8 @@ import { UserModule } from './modules/user/user.module';
 import { ScaleModule } from './modules/scale/scale.module';
 import { MedicationModule } from './modules/medication/medication.module';
 import { AdverseEventModule } from './modules/adverse-event/adverse-event.module';
+import { MedicalFileModule } from './modules/medical-file/medical-file.module';
+import { StageRecordModule } from './modules/stage-record/stage-record.module';
 
 @Module({
   imports: [
@@ -51,6 +53,10 @@ import { AdverseEventModule } from './modules/adverse-event/adverse-event.module
     MedicationModule,
 
     AdverseEventModule,
+
+    MedicalFileModule,
+
+    StageRecordModule,
   ],
   controllers: [],
   providers: [
