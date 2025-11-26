@@ -12,12 +12,14 @@ import {
   AuditStageRecordDto,
   QueryStageRecordDto,
 } from './dto/stage-record.dto';
+import { AuditLogService } from '../audit-log/audit-log.service';
 
 @Injectable()
 export class StageRecordService {
   constructor(
     @InjectRepository(StageRecord)
     private stageRecordRepository: Repository<StageRecord>,
+    private auditLogService: AuditLogService,
   ) {}
 
   /**
@@ -88,6 +90,8 @@ export class StageRecordService {
       throw new BadRequestException('驳回时必须填写驳回原因');
     }
 
+    const previousStatus = record.status;
+
     record.status = auditStageRecordDto.auditResult;
     record.auditResult = auditStageRecordDto.auditResult;
     record.auditedBy = auditedBy;
@@ -95,7 +99,19 @@ export class StageRecordService {
     record.auditRemark = auditStageRecordDto.auditRemark;
     record.rejectReason = auditStageRecordDto.rejectReason;
 
-    return await this.stageRecordRepository.save(record);
+    const savedRecord = await this.stageRecordRepository.save(record);
+
+    // 记录审计日志
+    await this.auditLogService.create({
+      stageRecordId: id,
+      auditorId: auditedBy,
+      action: auditStageRecordDto.auditResult === 'approved' ? 'approve' : 'reject',
+      remark: auditStageRecordDto.auditRemark,
+      previousStatus,
+      newStatus: auditStageRecordDto.auditResult,
+    });
+
+    return savedRecord;
   }
 
   /**

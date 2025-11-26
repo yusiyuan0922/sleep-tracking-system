@@ -15,6 +15,10 @@ import { AdverseEventModule } from './modules/adverse-event/adverse-event.module
 import { MedicalFileModule } from './modules/medical-file/medical-file.module';
 import { StageRecordModule } from './modules/stage-record/stage-record.module';
 import { AdminModule } from './modules/admin/admin.module';
+import { AuditLogModule } from './modules/audit-log/audit-log.module';
+import { OperationLogModule } from './modules/operation-log/operation-log.module';
+import { PushMessageModule } from './modules/push-message/push-message.module';
+import { SystemConfigModule } from './modules/system-config/system-config.module';
 
 @Module({
   imports: [
@@ -60,6 +64,14 @@ import { AdminModule } from './modules/admin/admin.module';
     MedicalFileModule,
 
     StageRecordModule,
+
+    AuditLogModule,
+
+    OperationLogModule,
+
+    PushMessageModule,
+
+    SystemConfigModule,
   ],
   controllers: [],
   providers: [
