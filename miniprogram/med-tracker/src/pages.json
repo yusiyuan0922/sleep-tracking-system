@@ -1,16 +1,138 @@
 {
-	"pages": [ //pages数组中第一项表示应用启动页，参考：https://uniapp.dcloud.io/collocation/pages
-		{
-			"path": "pages/index/index",
-			"style": {
-				"navigationBarTitleText": "uni-app"
-			}
-		}
-	],
-	"globalStyle": {
-		"navigationBarTextStyle": "black",
-		"navigationBarTitleText": "uni-app",
-		"navigationBarBackgroundColor": "#F8F8F8",
-		"backgroundColor": "#F8F8F8"
-	}
+  "pages": [
+    {
+      "path": "pages/login/index",
+      "style": {
+        "navigationBarTitleText": "登录"
+      }
+    },
+    {
+      "path": "pages/index/index",
+      "style": {
+        "navigationBarTitleText": "首页"
+      }
+    },
+    {
+      "path": "pages/register/patient",
+      "style": {
+        "navigationBarTitleText": "患者注册"
+      }
+    },
+    {
+      "path": "pages/stage/v1",
+      "style": {
+        "navigationBarTitleText": "V1阶段"
+      }
+    },
+    {
+      "path": "pages/stage/v2",
+      "style": {
+        "navigationBarTitleText": "V2阶段"
+      }
+    },
+    {
+      "path": "pages/stage/v3",
+      "style": {
+        "navigationBarTitleText": "V3阶段"
+      }
+    },
+    {
+      "path": "pages/stage/v4",
+      "style": {
+        "navigationBarTitleText": "V4阶段"
+      }
+    },
+    {
+      "path": "pages/scale/list",
+      "style": {
+        "navigationBarTitleText": "量表列表"
+      }
+    },
+    {
+      "path": "pages/scale/fill",
+      "style": {
+        "navigationBarTitleText": "填写量表"
+      }
+    },
+    {
+      "path": "pages/medication/add",
+      "style": {
+        "navigationBarTitleText": "添加用药记录"
+      }
+    },
+    {
+      "path": "pages/medication/list",
+      "style": {
+        "navigationBarTitleText": "用药记录"
+      }
+    },
+    {
+      "path": "pages/adverse-event/add",
+      "style": {
+        "navigationBarTitleText": "记录不良事件"
+      }
+    },
+    {
+      "path": "pages/adverse-event/list",
+      "style": {
+        "navigationBarTitleText": "不良事件"
+      }
+    },
+    {
+      "path": "pages/medical-file/upload",
+      "style": {
+        "navigationBarTitleText": "上传病历"
+      }
+    },
+    {
+      "path": "pages/medical-file/list",
+      "style": {
+        "navigationBarTitleText": "病历文件"
+      }
+    },
+    {
+      "path": "pages/profile/index",
+      "style": {
+        "navigationBarTitleText": "个人中心"
+      }
+    }
+  ],
+  "tabBar": {
+    "color": "#7A7E83",
+    "selectedColor": "#409EFF",
+    "borderStyle": "black",
+    "backgroundColor": "#ffffff",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "iconPath": "static/tabbar/home.png",
+        "selectedIconPath": "static/tabbar/home-active.png",
+        "text": "首页"
+      },
+      {
+        "pagePath": "pages/scale/list",
+        "iconPath": "static/tabbar/scale.png",
+        "selectedIconPath": "static/tabbar/scale-active.png",
+        "text": "量表"
+      },
+      {
+        "pagePath": "pages/medication/list",
+        "iconPath": "static/tabbar/medication.png",
+        "selectedIconPath": "static/tabbar/medication-active.png",
+        "text": "用药"
+      },
+      {
+        "pagePath": "pages/profile/index",
+        "iconPath": "static/tabbar/profile.png",
+        "selectedIconPath": "static/tabbar/profile-active.png",
+        "text": "我的"
+      }
+    ]
+  },
+  "globalStyle": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "睡眠跟踪",
+    "navigationBarBackgroundColor": "#FFFFFF",
+    "backgroundColor": "#F5F5F5"
+  }
 }

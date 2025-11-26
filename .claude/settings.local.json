@@ -28,7 +28,10 @@
       "Bash(npx kill-port:*)",
       "Bash(set:*)",
       "Bash(del /f nul)",
-      "Bash(git reset:*)"
+      "Bash(git reset:*)",
+      "Bash(node create-admin.js:*)",
+      "Bash(node seed-admin.js:*)",
+      "Bash(del /f create-admin.js seed-admin.js)"
     ],
     "deny": [],
     "ask": []
