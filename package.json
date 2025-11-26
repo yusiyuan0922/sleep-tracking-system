@@ -1,0 +1,17 @@
+{
+  "name": "sleep-tracking-system",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "miniprogram",
+    "web-admin",
+    "shared"
+  ],
+  "scripts": {
+    "dev:backend": "cd backend && npm run start:dev",
+    "dev:web": "cd web-admin && npm run dev",
+    "build:backend": "cd backend && npm run build",
+    "build:web": "cd web-admin && npm run build"
+  }
+}
