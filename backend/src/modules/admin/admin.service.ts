@@ -114,15 +114,7 @@ export class AdminService {
   }
 
   async validatePassword(username: string, password: string): Promise<Admin | null> {
-    console.log('[validatePassword] Input:', { username, password, passwordType: typeof password, passwordValue: password });
-
     const admin = await this.findByUsername(username);
-    console.log('[validatePassword] Admin found:', {
-      found: !!admin,
-      hasPassword: !!admin?.password,
-      passwordType: typeof admin?.password,
-      passwordLength: admin?.password?.length
-    });
 
     if (!admin) {
       return null;
@@ -130,24 +122,20 @@ export class AdminService {
 
     // Check if password exists
     if (!admin.password) {
-      console.log('[validatePassword] Admin password is empty');
       return null;
     }
 
     if (!password) {
-      console.log('[validatePassword] Input password is empty');
       return null;
     }
 
     const isPasswordValid = await bcrypt.compare(password, admin.password);
-    console.log('[validatePassword] Password valid:', isPasswordValid);
 
     if (!isPasswordValid) {
       return null;
     }
 
     if (admin.status !== 'active') {
-      console.log('[validatePassword] Admin status is not active:', admin.status);
       return null;
     }
 

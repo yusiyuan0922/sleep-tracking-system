@@ -1,11 +1,19 @@
 import { Controller, Post, Body } from '@nestjs/common';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiProperty } from '@nestjs/swagger';
+import { IsString, IsNotEmpty } from 'class-validator';
 import { AuthService } from './auth.service';
 import { WxLoginDto, LoginResponseDto } from './dto/login.dto';
 import { Public } from './decorators/public.decorator';
 
 export class AdminLoginDto {
+  @ApiProperty({ description: '用户名', example: 'admin' })
+  @IsString()
+  @IsNotEmpty()
   username: string;
+
+  @ApiProperty({ description: '密码', example: 'admin123' })
+  @IsString()
+  @IsNotEmpty()
   password: string;
 }
 
@@ -18,7 +26,6 @@ export class AuthController {
   @Post('admin-login')
   @ApiOperation({ summary: '管理员登录' })
   async adminLogin(@Body() loginDto: AdminLoginDto): Promise<LoginResponseDto> {
-    console.log('[AdminLogin Controller] Received login request:', { username: loginDto.username, hasPassword: !!loginDto.password });
     return this.authService.adminLogin(loginDto.username, loginDto.password);
   }
 
