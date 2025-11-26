@@ -20,7 +20,7 @@ export class CreateScaleConfigDto {
   })
   @IsEnum(['AIS', 'ESS', 'GAD7', 'PHQ9', 'HAMA', 'HAMD'])
   @IsNotEmpty()
-  code: string;
+  code: 'AIS' | 'ESS' | 'GAD7' | 'PHQ9' | 'HAMA' | 'HAMD';
 
   @ApiProperty({ description: '量表名称', example: '失眠严重程度指数量表' })
   @IsString()
@@ -34,7 +34,7 @@ export class CreateScaleConfigDto {
   })
   @IsEnum(['self', 'doctor'])
   @IsNotEmpty()
-  type: string;
+  type: 'self' | 'doctor';
 
   @ApiProperty({ description: '题目总数', example: 7 })
   @IsInt()
@@ -113,7 +113,7 @@ export class UpdateScaleConfigDto {
   })
   @IsOptional()
   @IsEnum(['active', 'inactive'])
-  status?: string;
+  status?: 'active' | 'inactive';
 }
 
 // 提交量表记录DTO
@@ -135,7 +135,7 @@ export class SubmitScaleRecordDto {
   })
   @IsEnum(['V1', 'V2', 'V3', 'V4'])
   @IsNotEmpty()
-  stage: string;
+  stage: 'V1' | 'V2' | 'V3' | 'V4';
 
   @ApiProperty({
     description: '答案数组(每题的分值)',
@@ -165,7 +165,7 @@ export class QueryScaleRecordDto {
   })
   @IsOptional()
   @IsEnum(['V1', 'V2', 'V3', 'V4'])
-  stage?: string;
+  stage?: 'V1' | 'V2' | 'V3' | 'V4';
 
   @ApiPropertyOptional({ description: '页码', default: 1 })
   @IsOptional()

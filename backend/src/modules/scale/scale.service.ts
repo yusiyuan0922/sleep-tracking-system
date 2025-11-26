@@ -43,10 +43,8 @@ export class ScaleService {
       );
     }
 
-    const scaleConfig = this.scaleConfigRepository.create(
-      createScaleConfigDto as any,
-    );
-    return await this.scaleConfigRepository.save(scaleConfig);
+    const scaleConfig = this.scaleConfigRepository.create(createScaleConfigDto);
+    return this.scaleConfigRepository.save(scaleConfig);
   }
 
   /**

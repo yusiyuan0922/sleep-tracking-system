@@ -10,6 +10,7 @@ import { DoctorModule } from './modules/doctor/doctor.module';
 import { PatientModule } from './modules/patient/patient.module';
 import { UserModule } from './modules/user/user.module';
 import { ScaleModule } from './modules/scale/scale.module';
+import { MedicationModule } from './modules/medication/medication.module';
 
 @Module({
   imports: [
@@ -45,6 +46,8 @@ import { ScaleModule } from './modules/scale/scale.module';
     UserModule,
 
     ScaleModule,
+
+    MedicationModule,
   ],
   controllers: [],
   providers: [
