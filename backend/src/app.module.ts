@@ -11,6 +11,7 @@ import { PatientModule } from './modules/patient/patient.module';
 import { UserModule } from './modules/user/user.module';
 import { ScaleModule } from './modules/scale/scale.module';
 import { MedicationModule } from './modules/medication/medication.module';
+import { AdverseEventModule } from './modules/adverse-event/adverse-event.module';
 
 @Module({
   imports: [
@@ -48,6 +49,8 @@ import { MedicationModule } from './modules/medication/medication.module';
     ScaleModule,
 
     MedicationModule,
+
+    AdverseEventModule,
   ],
   controllers: [],
   providers: [
