@@ -10,6 +10,10 @@ import { Patient } from '../../database/entities/patient.entity';
 import { User } from '../../database/entities/user.entity';
 import { Doctor } from '../../database/entities/doctor.entity';
 import { Hospital } from '../../database/entities/hospital.entity';
+import { ScaleRecord } from '../../database/entities/scale-record.entity';
+import { MedicalFile } from '../../database/entities/medical-file.entity';
+import { MedicationRecord } from '../../database/entities/medication-record.entity';
+import { ConcomitantMedication } from '../../database/entities/concomitant-medication.entity';
 import {
   RegisterPatientDto,
   QueryPatientDto,
@@ -18,6 +22,7 @@ import {
   CompleteV2Dto,
   CompleteV3Dto,
 } from './dto/patient.dto';
+import { STAGE_REQUIREMENTS } from '../../../shared/constants/stages';
 
 @Injectable()
 export class PatientService {
@@ -30,6 +35,14 @@ export class PatientService {
     private readonly doctorRepository: Repository<Doctor>,
     @InjectRepository(Hospital)
     private readonly hospitalRepository: Repository<Hospital>,
+    @InjectRepository(ScaleRecord)
+    private readonly scaleRecordRepository: Repository<ScaleRecord>,
+    @InjectRepository(MedicalFile)
+    private readonly medicalFileRepository: Repository<MedicalFile>,
+    @InjectRepository(MedicationRecord)
+    private readonly medicationRecordRepository: Repository<MedicationRecord>,
+    @InjectRepository(ConcomitantMedication)
+    private readonly concomitantMedicationRepository: Repository<ConcomitantMedication>,
   ) {}
 
   /**
@@ -238,6 +251,17 @@ export class PatientService {
       );
     }
 
+    // 检查是否满足V1阶段完成条件
+    const checkResult = await this.checkStageRequirements(id, 'V1');
+    if (!checkResult.canComplete) {
+      const missingItems = checkResult.missingRequirements
+        .map(item => item.name || item.message)
+        .join('、');
+      throw new BadRequestException(
+        `V1阶段未满足完成条件，缺少：${missingItems}`,
+      );
+    }
+
     // 更新V1完成时间和V2时间窗口
     patient.v1CompletedAt = new Date();
     patient.v2WindowStart = new Date(completeV1Dto.v2WindowStart);
@@ -257,6 +281,17 @@ export class PatientService {
     if (patient.currentStage !== 'V2') {
       throw new BadRequestException(
         `患者当前阶段为 ${patient.currentStage},无法完成V2`,
+      );
+    }
+
+    // 检查是否满足V2阶段完成条件
+    const checkResult = await this.checkStageRequirements(id, 'V2');
+    if (!checkResult.canComplete) {
+      const missingItems = checkResult.missingRequirements
+        .map(item => item.name || item.message)
+        .join('、');
+      throw new BadRequestException(
+        `V2阶段未满足完成条件，缺少：${missingItems}`,
       );
     }
 
@@ -282,6 +317,17 @@ export class PatientService {
       );
     }
 
+    // 检查是否满足V3阶段完成条件
+    const checkResult = await this.checkStageRequirements(id, 'V3');
+    if (!checkResult.canComplete) {
+      const missingItems = checkResult.missingRequirements
+        .map(item => item.name || item.message)
+        .join('、');
+      throw new BadRequestException(
+        `V3阶段未满足完成条件，缺少：${missingItems}`,
+      );
+    }
+
     // 更新V3完成时间和V4时间窗口
     patient.v3CompletedAt = new Date();
     patient.v4WindowStart = new Date(completeV3Dto.v4WindowStart);
@@ -301,6 +347,17 @@ export class PatientService {
     if (patient.currentStage !== 'V4') {
       throw new BadRequestException(
         `患者当前阶段为 ${patient.currentStage},无法完成V4`,
+      );
+    }
+
+    // 检查是否满足V4阶段完成条件
+    const checkResult = await this.checkStageRequirements(id, 'V4');
+    if (!checkResult.canComplete) {
+      const missingItems = checkResult.missingRequirements
+        .map(item => item.name || item.message)
+        .join('、');
+      throw new BadRequestException(
+        `V4阶段未满足完成条件，缺少：${missingItems}`,
       );
     }
 
@@ -337,6 +394,100 @@ export class PatientService {
         end: patient.v4WindowEnd,
         completed: patient.v4CompletedAt,
       },
+    };
+  }
+
+  /**
+   * 检查阶段是否满足完成条件
+   */
+  async checkStageRequirements(patientId: number, stage: 'V1' | 'V2' | 'V3' | 'V4') {
+    const requirements = STAGE_REQUIREMENTS[stage];
+    const missingRequirements: Array<{ type: string; code?: string; name?: string; message?: string }> = [];
+    const completedRequirements: Array<{ type: string; code?: string; name?: string }> = [];
+
+    // 检查量表
+    for (const scaleCode of requirements.requiredScales) {
+      const scaleRecord = await this.scaleRecordRepository.findOne({
+        where: { patientId, stage, scaleCode },
+      });
+
+      if (scaleRecord) {
+        completedRequirements.push({ type: 'scale', code: scaleCode, name: `${scaleCode}量表` });
+      } else {
+        missingRequirements.push({ type: 'scale', code: scaleCode, name: `${scaleCode}量表` });
+      }
+    }
+
+    // 检查病历文件
+    if (requirements.requiresMedicalFiles) {
+      const medicalFile = await this.medicalFileRepository.findOne({
+        where: { patientId, stage },
+      });
+
+      if (medicalFile) {
+        completedRequirements.push({ type: 'medicalFile', name: '病历文件' });
+      } else {
+        missingRequirements.push({ type: 'medicalFile', message: '需要上传病历文件' });
+      }
+    }
+
+    // 检查用药记录
+    if (requirements.requiresMedicationRecord) {
+      const medicationRecord = await this.medicationRecordRepository.findOne({
+        where: { patientId, stage },
+      });
+
+      if (medicationRecord) {
+        completedRequirements.push({ type: 'medicationRecord', name: '用药记录' });
+      } else {
+        missingRequirements.push({ type: 'medicationRecord', message: '需要填写用药记录' });
+      }
+    }
+
+    // 检查合并用药
+    if (requirements.requiresConcomitantMeds) {
+      const concomitantMed = await this.concomitantMedicationRepository.findOne({
+        where: { patientId, stage },
+      });
+
+      if (concomitantMed) {
+        completedRequirements.push({ type: 'concomitantMedication', name: '合并用药记录' });
+      } else {
+        missingRequirements.push({ type: 'concomitantMedication', message: '需要填写合并用药记录' });
+      }
+    }
+
+    return {
+      canComplete: missingRequirements.length === 0,
+      missingRequirements,
+      completedRequirements,
+    };
+  }
+
+  /**
+   * 获取患者阶段完成状态
+   */
+  async getStageCompletionStatus(id: number) {
+    const patient = await this.findOne(id);
+
+    if (patient.currentStage === 'completed') {
+      return {
+        currentStage: 'completed',
+        canComplete: false,
+        message: '患者已完成所有阶段',
+        missingRequirements: [],
+        completedRequirements: [],
+      };
+    }
+
+    const checkResult = await this.checkStageRequirements(
+      id,
+      patient.currentStage as 'V1' | 'V2' | 'V3' | 'V4',
+    );
+
+    return {
+      currentStage: patient.currentStage,
+      ...checkResult,
     };
   }
 }

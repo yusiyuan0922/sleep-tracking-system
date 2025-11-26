@@ -78,6 +78,13 @@ export class PatientController {
     return this.patientService.getTimeWindows(id);
   }
 
+  @Get(':id/stage-completion-status')
+  @Roles('admin', 'doctor', 'patient')
+  @ApiOperation({ summary: '获取患者当前阶段的完成状态' })
+  async getStageCompletionStatus(@Param('id', ParseIntPipe) id: number) {
+    return this.patientService.getStageCompletionStatus(id);
+  }
+
   @Patch(':id/status')
   @Roles('admin', 'doctor')
   @ApiOperation({ summary: '更新患者状态' })

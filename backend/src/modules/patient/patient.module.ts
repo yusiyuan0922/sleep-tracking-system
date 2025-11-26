@@ -6,9 +6,24 @@ import { Patient } from '../../database/entities/patient.entity';
 import { User } from '../../database/entities/user.entity';
 import { Doctor } from '../../database/entities/doctor.entity';
 import { Hospital } from '../../database/entities/hospital.entity';
+import { ScaleRecord } from '../../database/entities/scale-record.entity';
+import { MedicalFile } from '../../database/entities/medical-file.entity';
+import { MedicationRecord } from '../../database/entities/medication-record.entity';
+import { ConcomitantMedication } from '../../database/entities/concomitant-medication.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Patient, User, Doctor, Hospital])],
+  imports: [
+    TypeOrmModule.forFeature([
+      Patient,
+      User,
+      Doctor,
+      Hospital,
+      ScaleRecord,
+      MedicalFile,
+      MedicationRecord,
+      ConcomitantMedication,
+    ]),
+  ],
   controllers: [PatientController],
   providers: [PatientService],
   exports: [PatientService],
