@@ -7,6 +7,7 @@ import { AuthController } from './auth.controller';
 import { JwtStrategy } from './jwt.strategy';
 import { User } from '../../database/entities/user.entity';
 import { jwtConstants } from './constants';
+import { AdminModule } from '../admin/admin.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { jwtConstants } from './constants';
       secret: jwtConstants.secret,
       signOptions: { expiresIn: '7d' },
     }),
+    AdminModule,
   ],
   providers: [AuthService, JwtStrategy],
   controllers: [AuthController],

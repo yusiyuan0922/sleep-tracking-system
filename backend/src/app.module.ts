@@ -14,6 +14,7 @@ import { MedicationModule } from './modules/medication/medication.module';
 import { AdverseEventModule } from './modules/adverse-event/adverse-event.module';
 import { MedicalFileModule } from './modules/medical-file/medical-file.module';
 import { StageRecordModule } from './modules/stage-record/stage-record.module';
+import { AdminModule } from './modules/admin/admin.module';
 
 @Module({
   imports: [
@@ -31,12 +32,14 @@ import { StageRecordModule } from './modules/stage-record/stage-record.module';
       username: process.env.DB_USERNAME || 'postgres',
       password: process.env.DB_PASSWORD || 'postgres',
       database: process.env.DB_DATABASE || 'sleep_tracking',
-      entities: [__dirname + '/database/entities/**/*.entity{.ts,.js}'],
+      entities: [__dirname + '/database/entities/**/*.entity{.ts,.js}', __dirname + '/entities/**/*.entity{.ts,.js}'],
       synchronize: process.env.NODE_ENV === 'development',
       logging: process.env.NODE_ENV === 'development',
     }),
 
     AuthModule,
+
+    AdminModule,
 
     UploadModule,
 

@@ -21,7 +21,14 @@
       "Bash(git add:*)",
       "Bash(del /f backendnul)",
       "Bash(git commit:*)",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(taskkill:*)",
+      "Bash(npx kill-port:*)",
+      "Bash(set:*)",
+      "Bash(del /f nul)",
+      "Bash(git reset:*)"
     ],
     "deny": [],
     "ask": []

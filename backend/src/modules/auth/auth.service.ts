@@ -4,6 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import axios from 'axios';
 import { User } from '../../database/entities/user.entity';
+import { AdminService } from '../admin/admin.service';
 
 @Injectable()
 export class AuthService {
@@ -11,7 +12,40 @@ export class AuthService {
     @InjectRepository(User)
     private userRepository: Repository<User>,
     private jwtService: JwtService,
+    private adminService: AdminService,
   ) {}
+
+  /**
+   * 管理员登录
+   */
+  async adminLogin(username: string, password: string) {
+    const admin = await this.adminService.validatePassword(username, password);
+
+    if (!admin) {
+      throw new UnauthorizedException('用户名或密码错误');
+    }
+
+    // 生成JWT Token
+    const payload = {
+      sub: admin.id,
+      username: admin.username,
+      role: admin.role,
+      type: 'admin',
+    };
+
+    const accessToken = this.jwtService.sign(payload);
+
+    return {
+      accessToken,
+      user: {
+        id: admin.id,
+        username: admin.username,
+        name: admin.name,
+        role: admin.role,
+        email: admin.email,
+      },
+    };
+  }
 
   /**
    * 微信登录
@@ -39,6 +73,7 @@ export class AuthService {
       sub: user.id,
       openid: user.openid,
       role: user.role,
+      type: 'user',
     };
 
     const accessToken = this.jwtService.sign(payload);

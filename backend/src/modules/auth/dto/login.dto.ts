@@ -13,10 +13,5 @@ export class LoginResponseDto {
   accessToken: string;
 
   @ApiProperty({ description: '用户信息' })
-  user: {
-    id: number;
-    openid: string;
-    role: string;
-    name: string;
-  };
+  user: any;
 }
