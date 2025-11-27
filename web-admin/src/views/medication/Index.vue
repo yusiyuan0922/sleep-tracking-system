@@ -113,7 +113,7 @@ const searchForm = reactive({
 const fetchData = async () => {
   try {
     loading.value = true;
-    const res = await medicationAPI.getList({
+    const res = await medicationAPI.getRecordList({
       page: pagination.page,
       pageSize: pagination.pageSize,
       ...searchForm,
@@ -143,7 +143,7 @@ const handleDelete = async (row: any) => {
     await ElMessageBox.confirm('确定要删除该用药记录吗？此操作不可恢复！', '警告', {
       type: 'warning',
     });
-    await medicationAPI.delete(row.id);
+    await medicationAPI.deleteRecord(row.id);
     ElMessage.success('删除成功');
     fetchData();
   } catch (error: any) {

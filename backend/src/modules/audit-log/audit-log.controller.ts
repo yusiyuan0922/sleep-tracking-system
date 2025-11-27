@@ -27,7 +27,7 @@ export class AuditLogController {
   }
 
   @Get()
-  @Roles('admin', 'doctor')
+  @Roles('super_admin', 'admin', 'doctor')
   @ApiOperation({ summary: '查询审计日志列表（支持分页和筛选）' })
   async findAll(@Query() query: QueryAuditLogDto) {
     return this.auditLogService.findAll(query);
@@ -48,7 +48,7 @@ export class AuditLogController {
   }
 
   @Get('stage-record/:stageRecordId')
-  @Roles('admin', 'doctor', 'patient')
+  @Roles('super_admin', 'admin', 'doctor', 'patient')
   @ApiOperation({ summary: '获取阶段记录的所有审计日志' })
   async findByStageRecord(
     @Param('stageRecordId', ParseIntPipe) stageRecordId: number,
@@ -57,7 +57,7 @@ export class AuditLogController {
   }
 
   @Get(':id')
-  @Roles('admin', 'doctor')
+  @Roles('super_admin', 'admin', 'doctor')
   @ApiOperation({ summary: '根据ID获取审计日志详情' })
   async findOne(@Param('id', ParseIntPipe) id: number) {
     return this.auditLogService.findOne(id);

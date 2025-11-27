@@ -167,11 +167,11 @@ const rules: FormRules = {
 const fetchData = async () => {
   try {
     loading.value = true;
-    const res = await scaleAPI.getList({
+    const res = await scaleAPI.getConfigList({
       page: pagination.page,
       pageSize: pagination.pageSize,
     });
-    tableData.value = res.items || [];
+    tableData.value = res.items || res || [];
     pagination.total = res.total || 0;
   } catch (error: any) {
     ElMessage.error(error.message || '获取数据失败');
@@ -200,7 +200,7 @@ const handleToggleStatus = async (row: any) => {
     await ElMessageBox.confirm(`确定要${action}该量表吗？`, '提示', {
       type: 'warning',
     });
-    await scaleAPI.updateStatus(row.id, newStatus);
+    await scaleAPI.updateConfig(row.id, { status: newStatus });
     ElMessage.success(`${action}成功`);
     fetchData();
   } catch (error: any) {
@@ -215,7 +215,7 @@ const handleDelete = async (row: any) => {
     await ElMessageBox.confirm('确定要删除该量表吗？此操作不可恢复！', '警告', {
       type: 'warning',
     });
-    await scaleAPI.delete(row.id);
+    await scaleAPI.deleteConfig(row.id);
     ElMessage.success('删除成功');
     fetchData();
   } catch (error: any) {
@@ -234,10 +234,10 @@ const handleSubmit = async () => {
         submitting.value = true;
         const { id, ...data } = formData;
         if (id) {
-          await scaleAPI.update(id, data);
+          await scaleAPI.updateConfig(id, data);
           ElMessage.success('更新成功');
         } else {
-          await scaleAPI.create(data);
+          await scaleAPI.createConfig(data);
           ElMessage.success('创建成功');
         }
         dialogVisible.value = false;

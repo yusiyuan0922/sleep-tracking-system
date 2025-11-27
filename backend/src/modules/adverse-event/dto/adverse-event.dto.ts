@@ -10,6 +10,7 @@ import {
   IsInt,
   Min,
 } from 'class-validator';
+import { Type, Transform } from 'class-transformer';
 
 // 创建不良事件 DTO
 export class CreateAdverseEventDto {
@@ -95,35 +96,43 @@ export class UpdateAdverseEventDto extends PartialType(CreateAdverseEventDto) {}
 export class QueryAdverseEventDto {
   @ApiPropertyOptional({ description: '患者ID' })
   @IsOptional()
+  @Transform(({ value }) => (value === '' ? undefined : value))
+  @Type(() => Number)
   @IsInt()
   patientId?: number;
 
   @ApiPropertyOptional({ description: '阶段', enum: ['V1', 'V2', 'V3', 'V4'] })
   @IsOptional()
+  @Transform(({ value }) => (value === '' ? undefined : value))
   @IsEnum(['V1', 'V2', 'V3', 'V4'])
   stage?: 'V1' | 'V2' | 'V3' | 'V4';
 
   @ApiPropertyOptional({ description: '严重程度', enum: ['mild', 'moderate', 'severe'] })
   @IsOptional()
+  @Transform(({ value }) => (value === '' ? undefined : value))
   @IsEnum(['mild', 'moderate', 'severe'])
   severity?: 'mild' | 'moderate' | 'severe';
 
   @ApiPropertyOptional({ description: '是否严重不良事件' })
   @IsOptional()
+  @Transform(({ value }) => (value === '' ? undefined : value))
+  @Type(() => Boolean)
   @IsBoolean()
   isSerious?: boolean;
 
   @ApiPropertyOptional({ description: '页码', default: 1 })
-  @IsOptional()
+  @Transform(({ value }) => (value === '' ? 1 : value))
+  @Type(() => Number)
   @IsInt()
   @Min(1)
-  page?: number;
+  page: number = 1;
 
   @ApiPropertyOptional({ description: '每页数量', default: 10 })
-  @IsOptional()
+  @Transform(({ value }) => (value === '' ? 10 : value))
+  @Type(() => Number)
   @IsInt()
   @Min(1)
-  pageSize?: number;
+  pageSize: number = 10;
 }
 
 // 创建不良事件附件 DTO

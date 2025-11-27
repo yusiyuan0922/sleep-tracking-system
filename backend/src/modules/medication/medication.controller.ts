@@ -37,21 +37,21 @@ export class MedicationController {
   }
 
   @Get('records')
-  @Roles('admin', 'doctor')
+  @Roles('super_admin', 'admin', 'doctor')
   @ApiOperation({ summary: '查询用药记录列表（支持分页和筛选）' })
   async findAllMedicationRecords(@Query() query: QueryMedicationRecordDto) {
     return this.medicationService.findAllMedicationRecords(query);
   }
 
   @Get('records/:id')
-  @Roles('admin', 'doctor', 'patient')
+  @Roles('super_admin', 'admin', 'doctor', 'patient')
   @ApiOperation({ summary: '根据ID获取用药记录详情' })
   async findOneMedicationRecord(@Param('id', ParseIntPipe) id: number) {
     return this.medicationService.findOneMedicationRecord(id);
   }
 
   @Get('patients/:patientId/stages/:stage/records')
-  @Roles('admin', 'doctor', 'patient')
+  @Roles('super_admin', 'admin', 'doctor', 'patient')
   @ApiOperation({ summary: '获取患者某个阶段的用药记录' })
   async getPatientStageMedicationRecords(
     @Param('patientId', ParseIntPipe) patientId: number,
@@ -93,7 +93,7 @@ export class MedicationController {
   }
 
   @Get('concomitant')
-  @Roles('admin', 'doctor')
+  @Roles('super_admin', 'admin', 'doctor')
   @ApiOperation({ summary: '查询合并用药记录列表（支持分页和筛选）' })
   async findAllConcomitantMedications(
     @Query() query: QueryConcomitantMedicationDto,
@@ -102,14 +102,14 @@ export class MedicationController {
   }
 
   @Get('concomitant/:id')
-  @Roles('admin', 'doctor', 'patient')
+  @Roles('super_admin', 'admin', 'doctor', 'patient')
   @ApiOperation({ summary: '根据ID获取合并用药记录详情' })
   async findOneConcomitantMedication(@Param('id', ParseIntPipe) id: number) {
     return this.medicationService.findOneConcomitantMedication(id);
   }
 
   @Get('patients/:patientId/stages/:stage/concomitant')
-  @Roles('admin', 'doctor', 'patient')
+  @Roles('super_admin', 'admin', 'doctor', 'patient')
   @ApiOperation({ summary: '获取患者某个阶段的合并用药记录' })
   async getPatientStageConcomitantMedications(
     @Param('patientId', ParseIntPipe) patientId: number,

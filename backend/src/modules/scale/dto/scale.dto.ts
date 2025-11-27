@@ -10,6 +10,7 @@ import {
   Min,
   Max,
 } from 'class-validator';
+import { Type, Transform } from 'class-transformer';
 
 // 创建/更新量表配置DTO
 export class CreateScaleConfigDto {
@@ -151,11 +152,15 @@ export class SubmitScaleRecordDto {
 export class QueryScaleRecordDto {
   @ApiPropertyOptional({ description: '患者ID' })
   @IsOptional()
+  @Transform(({ value }) => (value === '' ? undefined : value))
+  @Type(() => Number)
   @IsInt()
   patientId?: number;
 
   @ApiPropertyOptional({ description: '量表配置ID' })
   @IsOptional()
+  @Transform(({ value }) => (value === '' ? undefined : value))
+  @Type(() => Number)
   @IsInt()
   scaleId?: number;
 
@@ -164,19 +169,22 @@ export class QueryScaleRecordDto {
     enum: ['V1', 'V2', 'V3', 'V4'],
   })
   @IsOptional()
+  @Transform(({ value }) => (value === '' ? undefined : value))
   @IsEnum(['V1', 'V2', 'V3', 'V4'])
   stage?: 'V1' | 'V2' | 'V3' | 'V4';
 
   @ApiPropertyOptional({ description: '页码', default: 1 })
-  @IsOptional()
+  @Transform(({ value }) => (value === '' ? 1 : value))
+  @Type(() => Number)
   @IsInt()
   @Min(1)
-  page?: number;
+  page: number = 1;
 
   @ApiPropertyOptional({ description: '每页数量', default: 10 })
-  @IsOptional()
+  @Transform(({ value }) => (value === '' ? 10 : value))
+  @Type(() => Number)
   @IsInt()
   @Min(1)
   @Max(100)
-  pageSize?: number;
+  pageSize: number = 10;
 }

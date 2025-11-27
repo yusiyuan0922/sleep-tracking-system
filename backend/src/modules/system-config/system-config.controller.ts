@@ -21,21 +21,21 @@ export class SystemConfigController {
   constructor(private readonly systemConfigService: SystemConfigService) {}
 
   @Post()
-  @Roles('admin')
+  @Roles('super_admin', 'admin')
   @ApiOperation({ summary: '创建系统配置' })
   async create(@Body() createSystemConfigDto: CreateSystemConfigDto) {
     return this.systemConfigService.create(createSystemConfigDto);
   }
 
   @Get()
-  @Roles('admin')
+  @Roles('super_admin', 'admin')
   @ApiOperation({ summary: '查询系统配置列表' })
   async findAll(@Query() query: QuerySystemConfigDto) {
     return this.systemConfigService.findAll(query);
   }
 
   @Get('categories')
-  @Roles('admin')
+  @Roles('super_admin', 'admin')
   @ApiOperation({ summary: '获取所有配置分组' })
   async getCategories() {
     const categories = await this.systemConfigService.getCategories();
@@ -43,14 +43,14 @@ export class SystemConfigController {
   }
 
   @Get('key/:configKey')
-  @Roles('admin')
+  @Roles('super_admin', 'admin')
   @ApiOperation({ summary: '根据配置键获取配置' })
   async findByKey(@Param('configKey') configKey: string) {
     return this.systemConfigService.findByKey(configKey);
   }
 
   @Get('value/:configKey')
-  @Roles('admin')
+  @Roles('super_admin', 'admin')
   @ApiOperation({ summary: '获取配置值（带类型转换）' })
   async getValue(@Param('configKey') configKey: string) {
     const value = await this.systemConfigService.getValue(configKey);
@@ -58,14 +58,14 @@ export class SystemConfigController {
   }
 
   @Get(':id')
-  @Roles('admin')
+  @Roles('super_admin', 'admin')
   @ApiOperation({ summary: '根据ID获取系统配置详情' })
   async findOne(@Param('id', ParseIntPipe) id: number) {
     return this.systemConfigService.findOne(id);
   }
 
   @Put(':id')
-  @Roles('admin')
+  @Roles('super_admin', 'admin')
   @ApiOperation({ summary: '更新系统配置' })
   async update(
     @Param('id', ParseIntPipe) id: number,
@@ -75,7 +75,7 @@ export class SystemConfigController {
   }
 
   @Put('key/:configKey')
-  @Roles('admin')
+  @Roles('super_admin', 'admin')
   @ApiOperation({ summary: '根据配置键更新配置值' })
   async updateByKey(
     @Param('configKey') configKey: string,
@@ -85,7 +85,7 @@ export class SystemConfigController {
   }
 
   @Delete(':id')
-  @Roles('admin')
+  @Roles('super_admin', 'admin')
   @ApiOperation({ summary: '删除系统配置' })
   async remove(@Param('id', ParseIntPipe) id: number) {
     await this.systemConfigService.remove(id);

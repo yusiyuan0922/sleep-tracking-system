@@ -35,7 +35,7 @@ export class PatientController {
   }
 
   @Get()
-  @Roles('admin', 'doctor')
+  @Roles('super_admin', 'admin', 'doctor')
   @ApiOperation({ summary: '获取患者列表(支持分页和筛选)' })
   async findAll(@Query() query: QueryPatientDto) {
     return this.patientService.findAll(query);
@@ -65,28 +65,28 @@ export class PatientController {
   }
 
   @Get(':id')
-  @Roles('admin', 'doctor', 'patient')
+  @Roles('super_admin', 'admin', 'doctor', 'patient')
   @ApiOperation({ summary: '获取患者详情(by ID)' })
   async findOne(@Param('id', ParseIntPipe) id: number) {
     return this.patientService.findOne(id);
   }
 
   @Get(':id/time-windows')
-  @Roles('admin', 'doctor', 'patient')
+  @Roles('super_admin', 'admin', 'doctor', 'patient')
   @ApiOperation({ summary: '获取患者的时间窗口信息' })
   async getTimeWindows(@Param('id', ParseIntPipe) id: number) {
     return this.patientService.getTimeWindows(id);
   }
 
   @Get(':id/stage-completion-status')
-  @Roles('admin', 'doctor', 'patient')
+  @Roles('super_admin', 'admin', 'doctor', 'patient')
   @ApiOperation({ summary: '获取患者当前阶段的完成状态' })
   async getStageCompletionStatus(@Param('id', ParseIntPipe) id: number) {
     return this.patientService.getStageCompletionStatus(id);
   }
 
   @Patch(':id/status')
-  @Roles('admin', 'doctor')
+  @Roles('super_admin', 'admin', 'doctor')
   @ApiOperation({ summary: '更新患者状态' })
   async updateStatus(
     @Param('id', ParseIntPipe) id: number,

@@ -8,6 +8,7 @@ import {
   IsInt,
   Min,
 } from 'class-validator';
+import { Type, Transform } from 'class-transformer';
 
 // 创建病历文件 DTO
 export class CreateMedicalFileDto {
@@ -62,11 +63,14 @@ export class UpdateMedicalFileDto extends PartialType(CreateMedicalFileDto) {}
 export class QueryMedicalFileDto {
   @ApiPropertyOptional({ description: '患者ID' })
   @IsOptional()
+  @Transform(({ value }) => (value === '' ? undefined : value))
+  @Type(() => Number)
   @IsInt()
   patientId?: number;
 
   @ApiPropertyOptional({ description: '阶段', enum: ['V1', 'V2', 'V3', 'V4'] })
   @IsOptional()
+  @Transform(({ value }) => (value === '' ? undefined : value))
   @IsEnum(['V1', 'V2', 'V3', 'V4'])
   stage?: 'V1' | 'V2' | 'V3' | 'V4';
 
@@ -75,18 +79,21 @@ export class QueryMedicalFileDto {
     enum: ['informed_consent', 'medical_record', 'lab_report', 'other'],
   })
   @IsOptional()
+  @Transform(({ value }) => (value === '' ? undefined : value))
   @IsEnum(['informed_consent', 'medical_record', 'lab_report', 'other'])
   fileCategory?: 'informed_consent' | 'medical_record' | 'lab_report' | 'other';
 
   @ApiPropertyOptional({ description: '页码', default: 1 })
-  @IsOptional()
+  @Transform(({ value }) => (value === '' ? 1 : value))
+  @Type(() => Number)
   @IsInt()
   @Min(1)
-  page?: number;
+  page: number = 1;
 
   @ApiPropertyOptional({ description: '每页数量', default: 10 })
-  @IsOptional()
+  @Transform(({ value }) => (value === '' ? 10 : value))
+  @Type(() => Number)
   @IsInt()
   @Min(1)
-  pageSize?: number;
+  pageSize: number = 10;
 }

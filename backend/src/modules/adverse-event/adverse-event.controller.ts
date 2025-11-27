@@ -35,21 +35,21 @@ export class AdverseEventController {
   }
 
   @Get()
-  @Roles('admin', 'doctor')
+  @Roles('super_admin', 'admin', 'doctor')
   @ApiOperation({ summary: '查询不良事件列表（支持分页和筛选）' })
   async findAllAdverseEvents(@Query() query: QueryAdverseEventDto) {
     return this.adverseEventService.findAllAdverseEvents(query);
   }
 
   @Get(':id')
-  @Roles('admin', 'doctor', 'patient')
+  @Roles('super_admin', 'admin', 'doctor', 'patient')
   @ApiOperation({ summary: '根据ID获取不良事件详情' })
   async findOneAdverseEvent(@Param('id', ParseIntPipe) id: number) {
     return this.adverseEventService.findOneAdverseEvent(id);
   }
 
   @Get('patients/:patientId/stages/:stage')
-  @Roles('admin', 'doctor', 'patient')
+  @Roles('super_admin', 'admin', 'doctor', 'patient')
   @ApiOperation({ summary: '获取患者某个阶段的不良事件' })
   async getPatientStageAdverseEvents(
     @Param('patientId', ParseIntPipe) patientId: number,
@@ -89,7 +89,7 @@ export class AdverseEventController {
   }
 
   @Get(':aeId/attachments')
-  @Roles('admin', 'doctor', 'patient')
+  @Roles('super_admin', 'admin', 'doctor', 'patient')
   @ApiOperation({ summary: '获取不良事件的所有附件' })
   async getEventAttachments(@Param('aeId', ParseIntPipe) aeId: number) {
     return this.adverseEventService.getEventAttachments(aeId);

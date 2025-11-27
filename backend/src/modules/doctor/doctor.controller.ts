@@ -34,7 +34,7 @@ export class DoctorController {
   }
 
   @Get()
-  @Roles('admin')
+  @Roles('super_admin', 'admin')
   @ApiOperation({ summary: '获取医生列表(支持分页和筛选,管理员可查看所有医生)' })
   async findAll(@Query() query: QueryDoctorDto) {
     return this.doctorService.findAll(query);
@@ -52,7 +52,7 @@ export class DoctorController {
   }
 
   @Get(':id')
-  @Roles('admin', 'doctor')
+  @Roles('super_admin', 'admin', 'doctor')
   @ApiOperation({ summary: '获取医生详情(by ID)' })
   async findOne(@Param('id', ParseIntPipe) id: number) {
     return this.doctorService.findOne(id);
@@ -69,7 +69,7 @@ export class DoctorController {
   }
 
   @Post(':id/audit')
-  @Roles('admin')
+  @Roles('super_admin', 'admin')
   @ApiOperation({ summary: '审核医生注册(管理员审核)' })
   async audit(
     @Param('id', ParseIntPipe) id: number,
@@ -80,7 +80,7 @@ export class DoctorController {
   }
 
   @Delete(':id')
-  @Roles('admin')
+  @Roles('super_admin', 'admin')
   @ApiOperation({ summary: '删除医生(软删除,修改审核状态为rejected)' })
   async remove(@Param('id', ParseIntPipe) id: number) {
     return this.doctorService.remove(id);

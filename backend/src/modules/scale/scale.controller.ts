@@ -28,35 +28,35 @@ export class ScaleController {
   // ==================== 量表配置管理接口 ====================
 
   @Post('configs')
-  @Roles('admin')
+  @Roles('super_admin', 'admin')
   @ApiOperation({ summary: '创建量表配置(仅管理员)' })
   async createConfig(@Body() createScaleConfigDto: CreateScaleConfigDto) {
     return this.scaleService.createConfig(createScaleConfigDto);
   }
 
   @Get('configs')
-  @Roles('admin', 'doctor', 'patient')
+  @Roles('super_admin', 'admin', 'doctor', 'patient')
   @ApiOperation({ summary: '获取量表配置列表' })
   async findAllConfigs(@Query('status') status?: string) {
     return this.scaleService.findAllConfigs(status);
   }
 
   @Get('configs/:id')
-  @Roles('admin', 'doctor', 'patient')
+  @Roles('super_admin', 'admin', 'doctor', 'patient')
   @ApiOperation({ summary: '根据ID获取量表配置详情' })
   async findConfigById(@Param('id', ParseIntPipe) id: number) {
     return this.scaleService.findConfigById(id);
   }
 
   @Get('configs/code/:code')
-  @Roles('admin', 'doctor', 'patient')
+  @Roles('super_admin', 'admin', 'doctor', 'patient')
   @ApiOperation({ summary: '根据代码获取量表配置' })
   async findConfigByCode(@Param('code') code: string) {
     return this.scaleService.findConfigByCode(code);
   }
 
   @Put('configs/:id')
-  @Roles('admin')
+  @Roles('super_admin', 'admin')
   @ApiOperation({ summary: '更新量表配置(仅管理员)' })
   async updateConfig(
     @Param('id', ParseIntPipe) id: number,
@@ -66,7 +66,7 @@ export class ScaleController {
   }
 
   @Delete('configs/:id')
-  @Roles('admin')
+  @Roles('super_admin', 'admin')
   @ApiOperation({ summary: '删除量表配置(仅管理员)' })
   async removeConfig(@Param('id', ParseIntPipe) id: number) {
     await this.scaleService.removeConfig(id);
@@ -83,21 +83,21 @@ export class ScaleController {
   }
 
   @Get('records')
-  @Roles('admin', 'doctor')
+  @Roles('super_admin', 'admin', 'doctor')
   @ApiOperation({ summary: '查询量表记录列表(支持分页和筛选)' })
   async findAllRecords(@Query() query: QueryScaleRecordDto) {
     return this.scaleService.findAllRecords(query);
   }
 
   @Get('records/:id')
-  @Roles('admin', 'doctor', 'patient')
+  @Roles('super_admin', 'admin', 'doctor', 'patient')
   @ApiOperation({ summary: '根据ID获取量表记录详情' })
   async findRecordById(@Param('id', ParseIntPipe) id: number) {
     return this.scaleService.findRecordById(id);
   }
 
   @Get('patients/:patientId/stages/:stage/records')
-  @Roles('admin', 'doctor', 'patient')
+  @Roles('super_admin', 'admin', 'doctor', 'patient')
   @ApiOperation({ summary: '获取患者某个阶段的所有量表记录' })
   async getPatientStageRecords(
     @Param('patientId', ParseIntPipe) patientId: number,

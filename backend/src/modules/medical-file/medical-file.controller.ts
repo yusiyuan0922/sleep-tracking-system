@@ -32,21 +32,21 @@ export class MedicalFileController {
   }
 
   @Get()
-  @Roles('admin', 'doctor')
+  @Roles('super_admin', 'admin', 'doctor')
   @ApiOperation({ summary: '查询病历文件列表（支持分页和筛选）' })
   async findAllMedicalFiles(@Query() query: QueryMedicalFileDto) {
     return this.medicalFileService.findAllMedicalFiles(query);
   }
 
   @Get(':id')
-  @Roles('admin', 'doctor', 'patient')
+  @Roles('super_admin', 'admin', 'doctor', 'patient')
   @ApiOperation({ summary: '根据ID获取病历文件详情' })
   async findOneMedicalFile(@Param('id', ParseIntPipe) id: number) {
     return this.medicalFileService.findOneMedicalFile(id);
   }
 
   @Get('patients/:patientId/stages/:stage')
-  @Roles('admin', 'doctor', 'patient')
+  @Roles('super_admin', 'admin', 'doctor', 'patient')
   @ApiOperation({ summary: '获取患者某个阶段的病历文件' })
   async getPatientStageMedicalFiles(
     @Param('patientId', ParseIntPipe) patientId: number,

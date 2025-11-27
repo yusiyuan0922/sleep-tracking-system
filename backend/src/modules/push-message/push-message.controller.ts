@@ -21,21 +21,21 @@ export class PushMessageController {
   constructor(private readonly pushMessageService: PushMessageService) {}
 
   @Post()
-  @Roles('admin', 'doctor')
+  @Roles('super_admin', 'admin', 'doctor')
   @ApiOperation({ summary: '创建推送消息' })
   async create(@Body() createPushMessageDto: CreatePushMessageDto) {
     return this.pushMessageService.create(createPushMessageDto);
   }
 
   @Get()
-  @Roles('admin')
+  @Roles('super_admin', 'admin')
   @ApiOperation({ summary: '查询推送消息列表（支持分页和筛选）' })
   async findAll(@Query() query: QueryPushMessageDto) {
     return this.pushMessageService.findAll(query);
   }
 
   @Get('my-messages')
-  @Roles('admin', 'doctor', 'patient')
+  @Roles('super_admin', 'admin', 'doctor', 'patient')
   @ApiOperation({ summary: '获取我的消息列表' })
   async getMyMessages(
     @CurrentUser() user: any,
@@ -46,7 +46,7 @@ export class PushMessageController {
   }
 
   @Get('unread-count')
-  @Roles('admin', 'doctor', 'patient')
+  @Roles('super_admin', 'admin', 'doctor', 'patient')
   @ApiOperation({ summary: '获取未读消息数量' })
   async getUnreadCount(@CurrentUser() user: any) {
     const count = await this.pushMessageService.getUnreadCount(user.userId);
@@ -54,7 +54,7 @@ export class PushMessageController {
   }
 
   @Post('mark-as-read')
-  @Roles('admin', 'doctor', 'patient')
+  @Roles('super_admin', 'admin', 'doctor', 'patient')
   @ApiOperation({ summary: '标记消息为已读' })
   async markAsRead(@Body() markAsReadDto: MarkAsReadDto) {
     await this.pushMessageService.markAsRead(markAsReadDto.messageIds);
@@ -62,7 +62,7 @@ export class PushMessageController {
   }
 
   @Post('mark-all-as-read')
-  @Roles('admin', 'doctor', 'patient')
+  @Roles('super_admin', 'admin', 'doctor', 'patient')
   @ApiOperation({ summary: '标记所有消息为已读' })
   async markAllAsRead(@CurrentUser() user: any) {
     await this.pushMessageService.markAllAsRead(user.userId);
@@ -70,14 +70,14 @@ export class PushMessageController {
   }
 
   @Get(':id')
-  @Roles('admin', 'doctor', 'patient')
+  @Roles('super_admin', 'admin', 'doctor', 'patient')
   @ApiOperation({ summary: '根据ID获取推送消息详情' })
   async findOne(@Param('id', ParseIntPipe) id: number) {
     return this.pushMessageService.findOne(id);
   }
 
   @Delete(':id')
-  @Roles('admin', 'doctor', 'patient')
+  @Roles('super_admin', 'admin', 'doctor', 'patient')
   @ApiOperation({ summary: '删除推送消息' })
   async remove(@Param('id', ParseIntPipe) id: number) {
     await this.pushMessageService.remove(id);

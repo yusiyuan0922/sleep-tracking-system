@@ -20,21 +20,21 @@ export class OperationLogController {
   constructor(private readonly operationLogService: OperationLogService) {}
 
   @Post()
-  @Roles('admin', 'doctor', 'patient')
+  @Roles('super_admin', 'admin', 'doctor', 'patient')
   @ApiOperation({ summary: '创建操作日志（一般由系统自动调用）' })
   async create(@Body() createOperationLogDto: CreateOperationLogDto) {
     return this.operationLogService.create(createOperationLogDto);
   }
 
   @Get()
-  @Roles('admin')
+  @Roles('super_admin', 'admin')
   @ApiOperation({ summary: '查询操作日志列表（支持分页和筛选）' })
   async findAll(@Query() query: QueryOperationLogDto) {
     return this.operationLogService.findAll(query);
   }
 
   @Get('my-operations')
-  @Roles('admin', 'doctor', 'patient')
+  @Roles('super_admin', 'admin', 'doctor', 'patient')
   @ApiOperation({ summary: '查看自己的操作记录' })
   async getMyOperations(
     @CurrentUser() user: any,
@@ -45,7 +45,7 @@ export class OperationLogController {
   }
 
   @Get('statistics')
-  @Roles('admin')
+  @Roles('super_admin', 'admin')
   @ApiOperation({ summary: '获取操作统计' })
   async getStatistics(
     @Query('userId', ParseIntPipe) userId?: number,
@@ -58,7 +58,7 @@ export class OperationLogController {
   }
 
   @Get(':id')
-  @Roles('admin')
+  @Roles('super_admin', 'admin')
   @ApiOperation({ summary: '根据ID获取操作日志详情' })
   async findOne(@Param('id', ParseIntPipe) id: number) {
     return this.operationLogService.findOne(id);

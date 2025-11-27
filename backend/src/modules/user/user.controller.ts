@@ -20,14 +20,14 @@ export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Get('profile')
-  @Roles('admin', 'doctor', 'patient')
+  @Roles('super_admin', 'admin', 'doctor', 'patient')
   @ApiOperation({ summary: '获取当前用户的个人信息' })
   async getMyProfile(@CurrentUser() user: any) {
     return this.userService.getProfile(user.userId);
   }
 
   @Patch('profile')
-  @Roles('admin', 'doctor', 'patient')
+  @Roles('super_admin', 'admin', 'doctor', 'patient')
   @ApiOperation({ summary: '更新当前用户的个人信息' })
   async updateMyProfile(
     @CurrentUser() user: any,
@@ -37,7 +37,7 @@ export class UserController {
   }
 
   @Get()
-  @Roles('admin')
+  @Roles('super_admin', 'admin')
   @ApiOperation({ summary: '获取所有用户列表(仅管理员)' })
   async findAll(
     @Query('page') page?: number,
@@ -49,14 +49,14 @@ export class UserController {
   }
 
   @Get(':id')
-  @Roles('admin')
+  @Roles('super_admin', 'admin')
   @ApiOperation({ summary: '获取指定用户详情(仅管理员)' })
   async findOne(@Param('id', ParseIntPipe) id: number) {
     return this.userService.findOne(id);
   }
 
   @Patch(':id/status')
-  @Roles('admin')
+  @Roles('super_admin', 'admin')
   @ApiOperation({ summary: '更新用户状态(仅管理员)' })
   async updateStatus(
     @Param('id', ParseIntPipe) id: number,

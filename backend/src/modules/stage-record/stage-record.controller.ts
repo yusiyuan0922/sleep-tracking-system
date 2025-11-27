@@ -58,21 +58,21 @@ export class StageRecordController {
   }
 
   @Get()
-  @Roles('admin', 'doctor')
+  @Roles('super_admin', 'admin', 'doctor')
   @ApiOperation({ summary: '查询阶段记录列表（支持分页和筛选）' })
   async findAllStageRecords(@Query() query: QueryStageRecordDto) {
     return this.stageRecordService.findAllStageRecords(query);
   }
 
   @Get(':id')
-  @Roles('admin', 'doctor', 'patient')
+  @Roles('super_admin', 'admin', 'doctor', 'patient')
   @ApiOperation({ summary: '根据ID获取阶段记录详情' })
   async findOneStageRecord(@Param('id', ParseIntPipe) id: number) {
     return this.stageRecordService.findOneStageRecord(id);
   }
 
   @Get('patients/:patientId/stages/:stage')
-  @Roles('admin', 'doctor', 'patient')
+  @Roles('super_admin', 'admin', 'doctor', 'patient')
   @ApiOperation({ summary: '获取患者的阶段记录' })
   async getPatientStageRecord(
     @Param('patientId', ParseIntPipe) patientId: number,
@@ -82,7 +82,7 @@ export class StageRecordController {
   }
 
   @Delete(':id')
-  @Roles('doctor', 'admin')
+  @Roles('super_admin', 'doctor', 'admin')
   @ApiOperation({ summary: '删除阶段记录（仅草稿状态）' })
   async removeStageRecord(@Param('id', ParseIntPipe) id: number) {
     await this.stageRecordService.removeStageRecord(id);
