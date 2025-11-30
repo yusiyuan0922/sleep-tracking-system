@@ -67,7 +67,10 @@ export class AdminService {
   }
 
   async findByUsername(username: string): Promise<Admin | null> {
-    return this.adminRepository.findOne({ where: { username } });
+    return this.adminRepository.findOne({
+      where: { username },
+      select: ['id', 'username', 'password', 'name', 'email', 'role', 'status', 'createdAt', 'updatedAt'],
+    });
   }
 
   async update(id: number, updateAdminDto: UpdateAdminDto): Promise<Admin> {
