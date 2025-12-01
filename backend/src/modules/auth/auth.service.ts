@@ -1,9 +1,11 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Like } from 'typeorm';
 import axios from 'axios';
 import { User } from '../../database/entities/user.entity';
+import { Patient } from '../../database/entities/patient.entity';
+import { Doctor } from '../../database/entities/doctor.entity';
 import { AdminService } from '../admin/admin.service';
 
 @Injectable()
@@ -11,6 +13,10 @@ export class AuthService {
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
+    @InjectRepository(Patient)
+    private patientRepository: Repository<Patient>,
+    @InjectRepository(Doctor)
+    private doctorRepository: Repository<Doctor>,
     private jwtService: JwtService,
     private adminService: AdminService,
   ) {}
@@ -50,15 +56,40 @@ export class AuthService {
   /**
    * 微信登录
    */
-  async wxLogin(code: string) {
+  async wxLogin(code: string, phone?: string) {
+    // 开发环境模拟登录
+    if (process.env.NODE_ENV === 'development' &&
+        (process.env.WECHAT_APP_ID === 'your_wechat_app_id' || !process.env.WECHAT_APP_ID)) {
+      console.log('[开发模式] 使用模拟微信登录');
+      return this.mockWxLogin(code, phone);
+    }
+
     // 1. 调用微信API获取openid和session_key
     const { openid, sessionKey } = await this.getWxOpenId(code);
 
-    // 2. 查找或创建用户
+    // 2. 查找用户
     let user = await this.userRepository.findOne({ where: { openid } });
 
+    // 3. 如果没找到且提供了手机号,尝试绑定管理员创建的账号
+    if (!user && phone) {
+      const adminCreatedUser = await this.userRepository.findOne({
+        where: {
+          phone,
+          openid: Like('admin_created_%'),
+        },
+      });
+
+      if (adminCreatedUser) {
+        // 绑定:更新openid为真实微信openid
+        adminCreatedUser.openid = openid;
+        user = await this.userRepository.save(adminCreatedUser);
+
+        console.log(`[绑定成功] 管理员创建的账号已绑定微信: userId=${user.id}, phone=${phone}`);
+      }
+    }
+
+    // 4. 如果仍未找到,创建新用户(默认为患者角色)
     if (!user) {
-      // 首次登录,创建新用户(默认为患者角色)
       user = this.userRepository.create({
         openid,
         role: 'patient',
@@ -68,7 +99,23 @@ export class AuthService {
       await this.userRepository.save(user);
     }
 
-    // 3. 生成JWT Token
+    // 5. 查询患者或医生信息
+    let patientId = null;
+    let doctorId = null;
+
+    if (user.role === 'patient') {
+      const patient = await this.patientRepository.findOne({ where: { userId: user.id } });
+      if (patient) {
+        patientId = patient.id;
+      }
+    } else if (user.role === 'doctor') {
+      const doctor = await this.doctorRepository.findOne({ where: { userId: user.id } });
+      if (doctor) {
+        doctorId = doctor.id;
+      }
+    }
+
+    // 6. 生成JWT Token
     const payload = {
       sub: user.id,
       openid: user.openid,
@@ -85,6 +132,86 @@ export class AuthService {
         openid: user.openid,
         role: user.role,
         name: user.name,
+        patientId,
+        doctorId,
+      },
+    };
+  }
+
+  /**
+   * 开发环境模拟微信登录
+   */
+  private async mockWxLogin(code: string, phone?: string) {
+    // 使用模拟的openid
+    const mockOpenId = `mock_openid_${code}`;
+
+    // 查找用户
+    let user = await this.userRepository.findOne({ where: { openid: mockOpenId } });
+
+    // 如果没找到且提供了手机号,尝试绑定管理员创建的账号
+    if (!user && phone) {
+      const adminCreatedUser = await this.userRepository.findOne({
+        where: {
+          phone,
+          openid: Like('admin_created_%'),
+        },
+      });
+
+      if (adminCreatedUser) {
+        // 绑定:更新openid为模拟openid
+        adminCreatedUser.openid = mockOpenId;
+        user = await this.userRepository.save(adminCreatedUser);
+
+        console.log(`[开发模式][绑定成功] 管理员创建的账号已绑定: userId=${user.id}, phone=${phone}`);
+      }
+    }
+
+    // 如果仍未找到,创建新用户
+    if (!user) {
+      user = this.userRepository.create({
+        openid: mockOpenId,
+        role: 'patient',
+        name: '测试用户',
+        status: 'active',
+      });
+      await this.userRepository.save(user);
+    }
+
+    // 查询患者或医生信息
+    let patientId = null;
+    let doctorId = null;
+
+    if (user.role === 'patient') {
+      const patient = await this.patientRepository.findOne({ where: { userId: user.id } });
+      if (patient) {
+        patientId = patient.id;
+      }
+    } else if (user.role === 'doctor') {
+      const doctor = await this.doctorRepository.findOne({ where: { userId: user.id } });
+      if (doctor) {
+        doctorId = doctor.id;
+      }
+    }
+
+    // 生成JWT Token
+    const payload = {
+      sub: user.id,
+      openid: user.openid,
+      role: user.role,
+      type: 'user',
+    };
+
+    const accessToken = this.jwtService.sign(payload);
+
+    return {
+      accessToken,
+      user: {
+        id: user.id,
+        openid: user.openid,
+        role: user.role,
+        name: user.name,
+        patientId,
+        doctorId,
       },
     };
   }

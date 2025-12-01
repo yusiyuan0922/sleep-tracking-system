@@ -32,31 +32,30 @@
 
       <el-table :data="tableData" v-loading="loading" border>
         <el-table-column prop="id" label="ID" width="80" />
-        <el-table-column prop="name" label="姓名" width="100" />
+        <el-table-column prop="user.name" label="姓名" width="100" />
         <el-table-column prop="hospital.name" label="所属医院" min-width="180" />
-        <el-table-column prop="title" label="职称" width="120" />
+        <el-table-column prop="employeeNo" label="工号" width="120" />
         <el-table-column prop="department" label="科室" width="120" />
-        <el-table-column prop="phone" label="电话" width="120" />
-        <el-table-column prop="email" label="邮箱" min-width="150" />
-        <el-table-column prop="status" label="状态" width="100">
+        <el-table-column prop="title" label="职称" width="120" />
+        <el-table-column prop="user.phone" label="电话" width="120" />
+        <el-table-column prop="auditStatus" label="审核状态" width="100">
           <template #default="{ row }">
-            <el-tag :type="row.status === 'active' ? 'success' : 'info'">
-              {{ row.status === 'active' ? '在职' : '离职' }}
+            <el-tag :type="row.auditStatus === 'approved' ? 'success' : row.auditStatus === 'pending' ? 'warning' : 'info'">
+              {{ row.auditStatus === 'approved' ? '已审核' : row.auditStatus === 'pending' ? '待审核' : '已拒绝' }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="200" fixed="right">
+        <el-table-column label="微信绑定" width="100">
+          <template #default="{ row }">
+            <el-tag :type="row.user?.openid?.startsWith('admin_created_') ? 'warning' : 'success'">
+              {{ row.user?.openid?.startsWith('admin_created_') ? '未绑定' : '已绑定' }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="150" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" size="small" @click="handleEdit(row)">
               编辑
-            </el-button>
-            <el-button
-              link
-              :type="row.status === 'active' ? 'warning' : 'success'"
-              size="small"
-              @click="handleToggleStatus(row)"
-            >
-              {{ row.status === 'active' ? '离职' : '在职' }}
             </el-button>
             <el-button link type="danger" size="small" @click="handleDelete(row)">
               删除
@@ -107,23 +106,17 @@
         <el-form-item label="姓名" prop="name">
           <el-input v-model="formData.name" placeholder="请输入姓名" />
         </el-form-item>
-        <el-form-item label="职称" prop="title">
-          <el-input v-model="formData.title" placeholder="请输入职称" />
+        <el-form-item label="电话" prop="phone">
+          <el-input v-model="formData.phone" placeholder="请输入手机号" />
+        </el-form-item>
+        <el-form-item label="工号" prop="employeeNo">
+          <el-input v-model="formData.employeeNo" placeholder="请输入工号(选填)" />
         </el-form-item>
         <el-form-item label="科室" prop="department">
-          <el-input v-model="formData.department" placeholder="请输入科室" />
+          <el-input v-model="formData.department" placeholder="请输入科室(选填)" />
         </el-form-item>
-        <el-form-item label="电话" prop="phone">
-          <el-input v-model="formData.phone" placeholder="请输入电话" />
-        </el-form-item>
-        <el-form-item label="邮箱" prop="email">
-          <el-input v-model="formData.email" placeholder="请输入邮箱" />
-        </el-form-item>
-        <el-form-item label="状态" prop="status">
-          <el-radio-group v-model="formData.status">
-            <el-radio label="active">在职</el-radio>
-            <el-radio label="inactive">离职</el-radio>
-          </el-radio-group>
+        <el-form-item label="职称" prop="title">
+          <el-input v-model="formData.title" placeholder="请输入职称(选填)" />
         </el-form-item>
       </el-form>
 
@@ -166,25 +159,18 @@ const formData = reactive({
   id: null as number | null,
   hospitalId: null as number | null,
   name: '',
-  title: '',
-  department: '',
   phone: '',
-  email: '',
-  status: 'active' as 'active' | 'inactive',
+  employeeNo: '',
+  department: '',
+  title: '',
 });
 
 const rules: FormRules = {
   hospitalId: [{ required: true, message: '请选择所属医院', trigger: 'change' }],
   name: [{ required: true, message: '请输入姓名', trigger: 'blur' }],
-  title: [{ required: true, message: '请输入职称', trigger: 'blur' }],
-  department: [{ required: true, message: '请输入科室', trigger: 'blur' }],
   phone: [
-    { required: true, message: '请输入电话', trigger: 'blur' },
+    { required: true, message: '请输入手机号', trigger: 'blur' },
     { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号码', trigger: 'blur' },
-  ],
-  email: [
-    { required: true, message: '请输入邮箱', trigger: 'blur' },
-    { type: 'email', message: '请输入正确的邮箱地址', trigger: 'blur' },
   ],
 };
 
@@ -205,7 +191,7 @@ const fetchData = async () => {
       pageSize: pagination.pageSize,
       ...searchForm,
     });
-    tableData.value = res.items || [];
+    tableData.value = res.list || [];
     pagination.total = res.total || 0;
   } catch (error: any) {
     ElMessage.error(error.message || '获取数据失败');
@@ -228,28 +214,15 @@ const handleAdd = () => {
 const handleEdit = (row: any) => {
   dialogTitle.value = '编辑医生';
   Object.assign(formData, {
-    ...row,
+    id: row.id,
     hospitalId: row.hospital?.id,
+    name: row.user?.name || '',
+    phone: row.user?.phone || '',
+    employeeNo: row.employeeNo || '',
+    department: row.department || '',
+    title: row.title || '',
   });
   dialogVisible.value = true;
-};
-
-const handleToggleStatus = async (row: any) => {
-  const newStatus = row.status === 'active' ? 'inactive' : 'active';
-  const action = newStatus === 'active' ? '在职' : '离职';
-
-  try {
-    await ElMessageBox.confirm(`确定要将该医生设置为${action}吗？`, '提示', {
-      type: 'warning',
-    });
-    await doctorAPI.updateStatus(row.id, newStatus);
-    ElMessage.success('操作成功');
-    fetchData();
-  } catch (error: any) {
-    if (error !== 'cancel') {
-      ElMessage.error(error.message || '操作失败');
-    }
-  }
 };
 
 const handleDelete = async (row: any) => {
@@ -299,11 +272,10 @@ const resetForm = () => {
   formData.id = null;
   formData.hospitalId = null;
   formData.name = '';
-  formData.title = '';
-  formData.department = '';
   formData.phone = '';
-  formData.email = '';
-  formData.status = 'active';
+  formData.employeeNo = '';
+  formData.department = '';
+  formData.title = '';
   formRef.value?.clearValidate();
 };
 

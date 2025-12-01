@@ -33,6 +33,6 @@ export class AuthController {
   @Post('wx-login')
   @ApiOperation({ summary: '微信登录' })
   async wxLogin(@Body() loginDto: WxLoginDto): Promise<LoginResponseDto> {
-    return this.authService.wxLogin(loginDto.code);
+    return this.authService.wxLogin(loginDto.code, loginDto.phone);
   }
 }

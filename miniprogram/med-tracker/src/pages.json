@@ -19,6 +19,12 @@
       }
     },
     {
+      "path": "pages/bind-phone/index",
+      "style": {
+        "navigationBarTitleText": "绑定手机号"
+      }
+    },
+    {
       "path": "pages/stage/v1",
       "style": {
         "navigationBarTitleText": "V1阶段"

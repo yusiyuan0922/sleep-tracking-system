@@ -43,9 +43,9 @@ const handleWxLogin = async () => {
       provider: 'weixin',
     });
 
-    if (loginRes[1].code) {
+    if (loginRes.code) {
       // 2. 调用后端登录接口
-      const result = await authAPI.wxLogin(loginRes[1].code);
+      const result = await authAPI.wxLogin(loginRes.code);
 
       // 3. 保存token和用户信息
       uni.setStorageSync(config.tokenKey, result.accessToken);
@@ -63,6 +63,11 @@ const handleWxLogin = async () => {
           // 患者未注册,跳转到注册页
           uni.reLaunch({
             url: '/pages/register/patient',
+          });
+        } else if (result.user.role === 'doctor' && !result.user.doctorId) {
+          // 医生未绑定,跳转到绑定手机号页面
+          uni.reLaunch({
+            url: '/pages/bind-phone/index',
           });
         } else {
           // 已注册,跳转到首页

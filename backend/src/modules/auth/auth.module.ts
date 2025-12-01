@@ -6,12 +6,14 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './jwt.strategy';
 import { User } from '../../database/entities/user.entity';
+import { Patient } from '../../database/entities/patient.entity';
+import { Doctor } from '../../database/entities/doctor.entity';
 import { jwtConstants } from './constants';
 import { AdminModule } from '../admin/admin.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User]),
+    TypeOrmModule.forFeature([User, Patient, Doctor]),
     PassportModule,
     JwtModule.register({
       secret: jwtConstants.secret,

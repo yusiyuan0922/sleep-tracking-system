@@ -3,8 +3,8 @@ import { post } from '../utils/request';
 /**
  * 微信登录
  */
-export function wxLogin(code: string) {
-  return post('/auth/wx-login', { code });
+export function wxLogin(code: string, phone?: string) {
+  return post('/auth/wx-login', { code, phone });
 }
 
 /**
