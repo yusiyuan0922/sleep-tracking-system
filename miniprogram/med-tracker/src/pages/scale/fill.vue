@@ -35,7 +35,7 @@
             :checked="answers[currentQuestionIndex] === index"
             color="#667eea"
           />
-          <text class="option-text">{{ option.text }}</text>
+          <text class="option-text">{{ option.label }}</text>
         </label>
       </radio-group>
     </view>
@@ -72,19 +72,20 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
+import { onLoad } from '@dcloudio/uni-app';
 import { scaleAPI } from '../../api/scale';
+import { patientAPI } from '../../api/patient';
 
-// 从页面参数获取
-const pages = getCurrentPages();
-const currentPage = pages[pages.length - 1] as any;
 const scaleCode = ref('');
 const stage = ref('');
 
+const scaleId = ref(0);
 const scaleName = ref('');
 const questions = ref<any[]>([]);
 const answers = ref<any[]>([]);
 const currentQuestionIndex = ref(0);
 const submitting = ref(false);
+const patientId = ref(0);
 
 // 当前题目
 const currentQuestion = computed(() => {
@@ -105,9 +106,22 @@ const isAllAnswered = computed(() => {
 // 加载量表
 const loadScale = async () => {
   try {
+    console.log('开始加载量表:', scaleCode.value);
     const result = await scaleAPI.getDetail(scaleCode.value);
+    console.log('量表数据:', result);
+
+    // 确保 scaleId 是数字类型
+    scaleId.value = typeof result.id === 'string'
+      ? parseInt(result.id, 10)
+      : result.id;
     scaleName.value = result.name;
     questions.value = result.questions || [];
+
+    console.log('题目数量:', questions.value.length);
+    if (questions.value.length > 0) {
+      console.log('第一题:', questions.value[0]);
+    }
+
     answers.value = new Array(questions.value.length).fill(undefined);
 
     // 尝试从缓存恢复进度
@@ -118,9 +132,11 @@ const loadScale = async () => {
       currentQuestionIndex.value = cached.currentIndex;
     }
   } catch (error: any) {
+    console.error('加载量表失败:', error);
     uni.showToast({
-      title: '加载量表失败',
+      title: error.message || '加载量表失败',
       icon: 'none',
+      duration: 3000,
     });
   }
 };
@@ -132,6 +148,15 @@ const onOptionChange = (e: any) => {
 
   // 保存进度到缓存
   saveProgress();
+
+  // 如果不是最后一题,自动跳转到下一题
+  if (currentQuestionIndex.value < questions.value.length - 1) {
+    // 延迟300ms跳转,让用户看到选中效果
+    setTimeout(() => {
+      currentQuestionIndex.value++;
+      saveProgress();
+    }, 300);
+  }
 };
 
 // 保存进度
@@ -172,24 +197,30 @@ const handleSubmit = async () => {
   try {
     submitting.value = true;
 
-    // 构建答题详情
-    const answerDetails = questions.value.map((q, index) => ({
-      questionId: q.id,
-      question: q.question,
-      answer: answers.value[index],
-      score: q.options[answers.value[index]].score,
-    }));
+    // 获取选项值数组 (每题选择的选项的value值)
+    const answerValues = questions.value.map((q, index) => {
+      const selectedOptionIndex = answers.value[index];
+      return q.options[selectedOptionIndex].value;
+    });
 
-    // 计算总分
-    const totalScore = answerDetails.reduce((sum, item) => sum + item.score, 0);
+    // 准备提交数据
+    const submitData = {
+      patientId: patientId.value,
+      scaleId: scaleId.value,
+      stage: stage.value,
+      answers: answerValues,
+    };
+
+    console.log('提交数据:', submitData);
+    console.log('数据类型检查:', {
+      patientId: typeof submitData.patientId,
+      scaleId: typeof submitData.scaleId,
+      stage: typeof submitData.stage,
+      answers: Array.isArray(submitData.answers),
+    });
 
     // 提交到后端
-    await scaleAPI.submit({
-      scaleCode: scaleCode.value,
-      stage: stage.value,
-      answers: answerDetails,
-      totalScore,
-    });
+    await scaleAPI.submit(submitData);
 
     // 清除缓存
     const cacheKey = `scale_progress_${scaleCode.value}_${stage.value}`;
@@ -206,6 +237,7 @@ const handleSubmit = async () => {
       uni.navigateBack();
     }, 1500);
   } catch (error: any) {
+    console.error('提交失败:', error);
     uni.showToast({
       title: error.message || '提交失败',
       icon: 'none',
@@ -215,14 +247,39 @@ const handleSubmit = async () => {
   }
 };
 
-onMounted(() => {
-  // 获取页面参数
-  const options = currentPage.$page.options || {};
+// 使用 onLoad 接收页面参数
+onLoad(async (options: any) => {
+  console.log('页面参数:', options);
   scaleCode.value = options.code || '';
   stage.value = options.stage || '';
+  console.log('scaleCode:', scaleCode.value, 'stage:', stage.value);
+
+  // 获取患者信息
+  try {
+    const patientInfo = await patientAPI.getMyInfo();
+    // 确保 patientId 是数字类型
+    patientId.value = typeof patientInfo.id === 'string'
+      ? parseInt(patientInfo.id, 10)
+      : patientInfo.id;
+    console.log('患者ID:', patientId.value, '类型:', typeof patientId.value);
+  } catch (error: any) {
+    console.error('获取患者信息失败:', error);
+    uni.showToast({
+      title: '获取患者信息失败',
+      icon: 'none',
+    });
+    return;
+  }
 
   if (scaleCode.value) {
-    loadScale();
+    console.log('准备加载量表...');
+    await loadScale();
+  } else {
+    console.error('缺少量表代码参数');
+    uni.showToast({
+      title: '缺少量表代码参数',
+      icon: 'none',
+    });
   }
 });
 </script>

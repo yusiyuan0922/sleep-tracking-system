@@ -17,9 +17,13 @@
             {{ row.type === 'self' ? '自评' : '他评' }}
           </template>
         </el-table-column>
-        <el-table-column prop="stage" label="适用阶段" width="120">
+        <el-table-column prop="stages" label="适用阶段" width="200">
           <template #default="{ row }">
-            <el-tag v-if="row.stage">{{ row.stage }}</el-tag>
+            <template v-if="row.stages && row.stages.length > 0">
+              <el-tag v-for="stage in row.stages" :key="stage" style="margin-right: 4px">
+                {{ stage }}
+              </el-tag>
+            </template>
             <span v-else>全部</span>
           </template>
         </el-table-column>
@@ -95,8 +99,14 @@
             <el-radio label="doctor">他评</el-radio>
           </el-radio-group>
         </el-form-item>
-        <el-form-item label="适用阶段" prop="stage">
-          <el-select v-model="formData.stage" placeholder="请选择适用阶段" clearable style="width: 100%">
+        <el-form-item label="适用阶段" prop="stages">
+          <el-select
+            v-model="formData.stages"
+            placeholder="请选择适用阶段（可多选）"
+            multiple
+            clearable
+            style="width: 100%"
+          >
             <el-option label="V1" value="V1" />
             <el-option label="V2" value="V2" />
             <el-option label="V3" value="V3" />
@@ -153,7 +163,7 @@ const formData = reactive({
   name: '',
   code: '' as 'AIS' | 'ESS' | 'GAD7' | 'PHQ9' | 'HAMA' | 'HAMD' | '',
   type: 'self' as 'self' | 'doctor',
-  stage: '' as 'V1' | 'V2' | 'V3' | 'V4' | '',
+  stages: [] as ('V1' | 'V2' | 'V3' | 'V4')[],
   description: '',
   status: 'active' as 'active' | 'inactive',
 });
@@ -256,7 +266,7 @@ const resetForm = () => {
   formData.name = '';
   formData.code = '';
   formData.type = 'self';
-  formData.stage = '';
+  formData.stages = [];
   formData.description = '';
   formData.status = 'active';
   formRef.value?.clearValidate();

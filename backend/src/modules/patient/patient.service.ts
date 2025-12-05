@@ -11,6 +11,7 @@ import { User } from '../../database/entities/user.entity';
 import { Doctor } from '../../database/entities/doctor.entity';
 import { Hospital } from '../../database/entities/hospital.entity';
 import { ScaleRecord } from '../../database/entities/scale-record.entity';
+import { ScaleConfig } from '../../database/entities/scale-config.entity';
 import { MedicalFile } from '../../database/entities/medical-file.entity';
 import { MedicationRecord } from '../../database/entities/medication-record.entity';
 import { ConcomitantMedication } from '../../database/entities/concomitant-medication.entity';
@@ -22,7 +23,7 @@ import {
   CompleteV2Dto,
   CompleteV3Dto,
 } from './dto/patient.dto';
-import { STAGE_REQUIREMENTS } from '../../../shared/constants/stages';
+import { STAGE_REQUIREMENTS } from '../../common/constants/stages';
 
 @Injectable()
 export class PatientService {
@@ -37,6 +38,8 @@ export class PatientService {
     private readonly hospitalRepository: Repository<Hospital>,
     @InjectRepository(ScaleRecord)
     private readonly scaleRecordRepository: Repository<ScaleRecord>,
+    @InjectRepository(ScaleConfig)
+    private readonly scaleConfigRepository: Repository<ScaleConfig>,
     @InjectRepository(MedicalFile)
     private readonly medicalFileRepository: Repository<MedicalFile>,
     @InjectRepository(MedicationRecord)
@@ -46,10 +49,20 @@ export class PatientService {
   ) {}
 
   /**
-   * 患者注册(医生为患者注册)
+   * 患者注册(患者自助注册)
    */
-  async register(registerPatientDto: RegisterPatientDto): Promise<Patient> {
-    const { userId, doctorId, hospitalId } = registerPatientDto;
+  async register(registerPatientDto: RegisterPatientDto, userId: number): Promise<Patient> {
+    const {
+      name,
+      gender,
+      birthDate,
+      phone,
+      emergencyContact,
+      emergencyPhone,
+      doctorId,
+      hospitalId,
+      diagnosis,
+    } = registerPatientDto;
 
     // 检查用户是否存在
     const user = await this.userRepository.findOne({ where: { id: userId } });
@@ -93,6 +106,23 @@ export class PatientService {
       throw new BadRequestException('该医院已停用,无法注册');
     }
 
+    // 检查手机号是否已被其他用户使用
+    if (phone && phone !== user.phone) {
+      const existingUser = await this.userRepository.findOne({
+        where: { phone },
+      });
+      if (existingUser && existingUser.id !== userId) {
+        throw new ConflictException('该手机号已被使用');
+      }
+    }
+
+    // 更新User表的基本信息
+    user.name = name;
+    user.gender = gender;
+    user.birthDate = new Date(birthDate);
+    user.phone = phone;
+    await this.userRepository.save(user);
+
     // 生成患者编号 (格式: P + 时间戳后8位 + 随机3位数)
     const patientNo = this.generatePatientNo();
 
@@ -102,6 +132,9 @@ export class PatientService {
       doctorId,
       hospitalId,
       patientNo,
+      emergencyContact,
+      emergencyPhone,
+      diagnosis,
       currentStage: 'V1',
       status: 'active',
     });
@@ -407,8 +440,24 @@ export class PatientService {
 
     // 检查量表
     for (const scaleCode of requirements.requiredScales) {
+      // 先查找量表配置获取scaleId
+      const scaleConfig = await this.scaleConfigRepository.findOne({
+        where: { code: scaleCode as any },
+      });
+
+      if (!scaleConfig) {
+        missingRequirements.push({
+          type: 'scale',
+          code: scaleCode,
+          name: `${scaleCode}量表`,
+          message: '量表配置不存在'
+        });
+        continue;
+      }
+
+      // 使用scaleId查询量表记录
       const scaleRecord = await this.scaleRecordRepository.findOne({
-        where: { patientId, stage, scaleCode },
+        where: { patientId, stage, scaleId: scaleConfig.id },
       });
 
       if (scaleRecord) {
@@ -447,7 +496,7 @@ export class PatientService {
     // 检查合并用药
     if (requirements.requiresConcomitantMeds) {
       const concomitantMed = await this.concomitantMedicationRepository.findOne({
-        where: { patientId, stage },
+        where: { patientId, stage: stage as 'V2' | 'V3' | 'V4' },
       });
 
       if (concomitantMed) {
@@ -475,18 +524,29 @@ export class PatientService {
         currentStage: 'completed',
         canComplete: false,
         message: '患者已完成所有阶段',
+        requirements: {
+          requiredScales: [],
+          requiresMedicalFiles: false,
+          requiresMedicationRecord: false,
+          requiresConcomitantMedication: false,
+        },
         missingRequirements: [],
         completedRequirements: [],
       };
     }
 
-    const checkResult = await this.checkStageRequirements(
-      id,
-      patient.currentStage as 'V1' | 'V2' | 'V3' | 'V4',
-    );
+    const stage = patient.currentStage as 'V1' | 'V2' | 'V3' | 'V4';
+    const requirements = STAGE_REQUIREMENTS[stage];
+    const checkResult = await this.checkStageRequirements(id, stage);
 
     return {
       currentStage: patient.currentStage,
+      requirements: {
+        requiredScales: requirements.requiredScales,
+        requiresMedicalFiles: requirements.requiresMedicalFiles,
+        requiresMedicationRecord: requirements.requiresMedicationRecord,
+        requiresConcomitantMedication: requirements.requiresConcomitantMeds,
+      },
       ...checkResult,
     };
   }

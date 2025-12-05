@@ -18,23 +18,18 @@
       >
         <view class="event-header">
           <text class="event-name">{{ event.eventName }}</text>
-          <view class="severity-tag" :class="'severity-' + event.severity">
-            {{ severityLabels[event.severity] }}
+          <view class="status-tag" :class="event.isOngoing ? 'status-ongoing' : 'status-ended'">
+            {{ event.isOngoing ? '持续中' : '已结束' }}
           </view>
         </view>
         <view class="event-info">
-          <text class="info-item">发生时间: {{ event.occurredAt }}</text>
+          <text class="info-item">AE序号: {{ event.aeNumber }}</text>
         </view>
         <view class="event-info">
-          <text class="info-item">持续时间: {{ event.duration }}</text>
-          <text class="info-item">与研究药物关系: {{ relationshipLabels[event.relationship] }}</text>
+          <text class="info-item">开始时间: {{ formatDate(event.onsetDate) }}</text>
         </view>
-        <view v-if="event.medicalIntervention" class="event-info">
-          <text class="info-item intervention">已采取医疗干预</text>
-        </view>
-        <view class="event-footer">
-          <text class="outcome-text">结果: {{ outcomeLabels[event.outcome] }}</text>
-          <text class="stage-text">{{ event.stage }}</text>
+        <view v-if="!event.isOngoing && event.endDate" class="event-info">
+          <text class="info-item">结束时间: {{ formatDate(event.endDate) }}</text>
         </view>
       </view>
 
@@ -52,34 +47,24 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref } from 'vue';
+import { onShow } from '@dcloudio/uni-app';
 import { adverseEventAPI } from '../../api/adverse-event';
 import { patientAPI } from '../../api/patient';
 
 const events = ref<any[]>([]);
 const loading = ref(false);
 
-const severityLabels: any = {
-  mild: '轻度',
-  moderate: '中度',
-  severe: '重度',
-};
-
-const relationshipLabels: any = {
-  definitely_related: '肯定相关',
-  probably_related: '可能相关',
-  possibly_related: '可疑相关',
-  unlikely_related: '可能无关',
-  not_related: '肯定无关',
-};
-
-const outcomeLabels: any = {
-  recovered: '已恢复',
-  recovering: '恢复中',
-  not_recovered: '未恢复',
-  sequelae: '有后遗症',
-  death: '死亡',
-  unknown: '未知',
+// 格式化日期
+const formatDate = (dateStr: string) => {
+  if (!dateStr) return '-';
+  const date = new Date(dateStr);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hour = String(date.getHours()).padStart(2, '0');
+  const minute = String(date.getMinutes()).padStart(2, '0');
+  return `${year}-${month}-${day} ${hour}:${minute}`;
 };
 
 // 加载不良事件列表
@@ -92,11 +77,15 @@ const loadEvents = async () => {
 
     // 获取不良事件列表
     const result = await adverseEventAPI.getList({
-      patientId: patient.id,
+      patientId: Number(patient.id), // 确保转换为数字
+      page: 1,
+      pageSize: 100,
     });
 
-    events.value = result.items || result || [];
+    // 后端返回格式: { data: [], total: number, page: number, pageSize: number, totalPages: number }
+    events.value = result.data || result.items || result || [];
   } catch (error: any) {
+    console.error('加载不良事件列表失败:', error);
     uni.showToast({
       title: '加载失败',
       icon: 'none',
@@ -119,10 +108,6 @@ const handleItemClick = (event: any) => {
     url: `/pages/adverse-event/detail?id=${event.id}`,
   });
 };
-
-onMounted(() => {
-  loadEvents();
-});
 
 // 监听页面显示(从添加页面返回时刷新)
 onShow(() => {
@@ -189,26 +174,21 @@ onShow(() => {
   flex: 1;
 }
 
-.severity-tag {
+.status-tag {
   padding: 6rpx 16rpx;
   border-radius: 20rpx;
   font-size: 22rpx;
   font-weight: 500;
 }
 
-.severity-mild {
-  background-color: #e6fffb;
-  color: #13c2c2;
-}
-
-.severity-moderate {
+.status-ongoing {
   background-color: #fff7e6;
   color: #fa8c16;
 }
 
-.severity-severe {
-  background-color: #fff1f0;
-  color: #f5222d;
+.status-ended {
+  background-color: #f0f0f0;
+  color: #999999;
 }
 
 .event-info {
@@ -223,29 +203,6 @@ onShow(() => {
   color: #666666;
 }
 
-.info-item.intervention {
-  color: #fa8c16;
-  font-weight: 500;
-}
-
-.event-footer {
-  margin-top: 15rpx;
-  padding-top: 15rpx;
-  border-top: 1rpx solid #f0f0f0;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.outcome-text {
-  font-size: 26rpx;
-  color: #666666;
-}
-
-.stage-text {
-  font-size: 22rpx;
-  color: #999999;
-}
 
 /* 空状态 */
 .empty-state {

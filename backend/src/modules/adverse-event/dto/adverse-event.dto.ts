@@ -44,6 +44,11 @@ export class CreateAdverseEventDto {
   @IsNotEmpty()
   onsetDate: string;
 
+  @ApiProperty({ description: '是否持续中', default: false })
+  @IsBoolean()
+  @IsNotEmpty()
+  isOngoing: boolean;
+
   @ApiPropertyOptional({ description: '结束时间，格式：YYYY-MM-DD HH:mm:ss' })
   @IsDateString()
   @IsOptional()

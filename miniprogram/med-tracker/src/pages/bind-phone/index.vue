@@ -38,6 +38,7 @@
 import { ref, computed } from 'vue';
 import { authAPI } from '@/api/auth';
 import config from '@/config';
+import { formatErrorMessage } from '@/utils/request';
 
 const phone = ref('');
 const loading = ref(false);
@@ -75,16 +76,20 @@ const handleBind = async () => {
         uni.setStorageSync(config.tokenKey, result.accessToken);
         uni.setStorageSync(config.userInfoKey, result.user);
 
+        console.log('✅ 医生绑定成功，保存的用户信息:', result.user);
+        console.log('用户角色:', result.user.role);
+
         uni.showToast({
           title: '绑定成功',
           icon: 'success',
           duration: 1500,
         });
 
-        // 跳转到医生端首页
+        // 跳转到医生端首页（使用 reLaunch 隐藏患者端 TabBar）
         setTimeout(() => {
-          uni.switchTab({
-            url: '/pages/index/index',
+          console.log('准备跳转到医生端首页');
+          uni.reLaunch({
+            url: '/pages/doctor/index',
           });
         }, 1500);
       } else {
@@ -101,7 +106,7 @@ const handleBind = async () => {
   } catch (error: any) {
     console.error('绑定失败:', error);
     uni.showToast({
-      title: error.message || '绑定失败',
+      title: formatErrorMessage(error.message, '绑定失败'),
       icon: 'none',
       duration: 2000,
     });

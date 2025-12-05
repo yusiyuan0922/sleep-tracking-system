@@ -2,7 +2,7 @@
   <view class="adverse-event-add-container">
     <view class="form-container">
       <view class="form-item">
-        <text class="label">事件名称 <text class="required">*</text></text>
+        <text class="label">不良事件名称 <text class="required">*</text></text>
         <input
           class="input"
           v-model="formData.eventName"
@@ -12,25 +12,7 @@
       </view>
 
       <view class="form-item">
-        <text class="label">严重程度 <text class="required">*</text></text>
-        <radio-group class="radio-group" @change="onSeverityChange">
-          <label class="radio-label">
-            <radio value="mild" :checked="formData.severity === 'mild'" color="#13c2c2" />
-            <text>轻度</text>
-          </label>
-          <label class="radio-label">
-            <radio value="moderate" :checked="formData.severity === 'moderate'" color="#fa8c16" />
-            <text>中度</text>
-          </label>
-          <label class="radio-label">
-            <radio value="severe" :checked="formData.severity === 'severe'" color="#f5222d" />
-            <text>重度</text>
-          </label>
-        </radio-group>
-      </view>
-
-      <view class="form-item">
-        <text class="label">发生日期 <text class="required">*</text></text>
+        <text class="label">开始日期 <text class="required">*</text></text>
         <picker
           mode="date"
           :value="formData.occurredDate"
@@ -39,13 +21,13 @@
         >
           <view class="picker">
             <text v-if="formData.occurredDate">{{ formData.occurredDate }}</text>
-            <text v-else class="placeholder">请选择发生日期</text>
+            <text v-else class="placeholder">请选择开始日期</text>
           </view>
         </picker>
       </view>
 
       <view class="form-item">
-        <text class="label">发生时间</text>
+        <text class="label">开始时间</text>
         <picker
           mode="time"
           :value="formData.occurredTime"
@@ -53,116 +35,53 @@
         >
           <view class="picker">
             <text v-if="formData.occurredTime">{{ formData.occurredTime }}</text>
-            <text v-else class="placeholder">请选择发生时间</text>
+            <text v-else class="placeholder">请选择开始时间</text>
           </view>
         </picker>
       </view>
 
       <view class="form-item">
-        <text class="label">持续时间</text>
-        <input
-          class="input"
-          v-model="formData.duration"
-          placeholder="例如: 2小时、1天"
-          placeholder-class="placeholder"
-        />
-      </view>
-
-      <view class="form-item">
-        <text class="label">与研究药物关系 <text class="required">*</text></text>
-        <picker
-          mode="selector"
-          :range="relationships"
-          range-key="label"
-          :value="relationshipIndex"
-          @change="onRelationshipChange"
-        >
-          <view class="picker">
-            <text v-if="formData.relationship">{{ relationships.find(r => r.value === formData.relationship)?.label }}</text>
-            <text v-else class="placeholder">请选择关系</text>
-          </view>
-        </picker>
-      </view>
-
-      <view class="form-item">
-        <text class="label">是否采取医疗干预</text>
-        <radio-group class="radio-group" @change="onInterventionChange">
+        <text class="label">是否持续 <text class="required">*</text></text>
+        <radio-group class="radio-group" @change="onOngoingChange">
           <label class="radio-label">
-            <radio value="true" :checked="formData.medicalIntervention === true" color="#409EFF" />
-            <text>是</text>
+            <radio value="true" :checked="formData.isOngoing === true" color="#409EFF" />
+            <text>持续中</text>
           </label>
           <label class="radio-label">
-            <radio value="false" :checked="formData.medicalIntervention === false" color="#409EFF" />
-            <text>否</text>
+            <radio value="false" :checked="formData.isOngoing === false" color="#409EFF" />
+            <text>已结束</text>
           </label>
         </radio-group>
       </view>
 
-      <view v-if="formData.medicalIntervention" class="form-item">
-        <text class="label">医疗干预措施</text>
-        <textarea
-          class="textarea"
-          v-model="formData.interventionDetails"
-          placeholder="请描述采取的医疗干预措施"
-          placeholder-class="placeholder"
-          maxlength="500"
-        />
-      </view>
-
-      <view class="form-item">
-        <text class="label">结果 <text class="required">*</text></text>
+      <view v-if="!formData.isOngoing" class="form-item">
+        <text class="label">结束日期</text>
         <picker
-          mode="selector"
-          :range="outcomes"
-          range-key="label"
-          :value="outcomeIndex"
-          @change="onOutcomeChange"
+          mode="date"
+          :value="formData.endDate"
+          @change="onEndDateChange"
+          :start="formData.occurredDate"
+          :end="today"
         >
           <view class="picker">
-            <text v-if="formData.outcome">{{ outcomes.find(o => o.value === formData.outcome)?.label }}</text>
-            <text v-else class="placeholder">请选择结果</text>
+            <text v-if="formData.endDate">{{ formData.endDate }}</text>
+            <text v-else class="placeholder">请选择结束日期</text>
           </view>
         </picker>
       </view>
 
-      <view class="form-item">
-        <text class="label">所属阶段 <text class="required">*</text></text>
+      <view v-if="!formData.isOngoing" class="form-item">
+        <text class="label">结束时间</text>
         <picker
-          mode="selector"
-          :range="stages"
-          :value="stageIndex"
-          @change="onStageChange"
+          mode="time"
+          :value="formData.endTime"
+          @change="onEndTimeChange"
         >
           <view class="picker">
-            <text v-if="formData.stage">{{ formData.stage }}</text>
-            <text v-else class="placeholder">请选择阶段</text>
+            <text v-if="formData.endTime">{{ formData.endTime }}</text>
+            <text v-else class="placeholder">请选择结束时间</text>
           </view>
         </picker>
-      </view>
-
-      <view class="form-item">
-        <text class="label">详细描述</text>
-        <textarea
-          class="textarea"
-          v-model="formData.description"
-          placeholder="请详细描述不良事件的情况"
-          placeholder-class="placeholder"
-          maxlength="1000"
-        />
-      </view>
-
-      <view class="form-item">
-        <text class="label">附件(可选)</text>
-        <view class="upload-section">
-          <view v-for="(file, index) in uploadedFiles" :key="index" class="file-item">
-            <text class="file-name">{{ file.name }}</text>
-            <text class="file-remove" @click="removeFile(index)">删除</text>
-          </view>
-          <button class="upload-btn" @click="handleUpload">
-            <text class="upload-icon">📎</text>
-            <text>上传附件</text>
-          </button>
-        </view>
       </view>
 
       <button class="submit-btn" @click="handleSubmit" :loading="submitting">
@@ -176,52 +95,19 @@
 import { ref } from 'vue';
 import { adverseEventAPI } from '../../api/adverse-event';
 import { patientAPI } from '../../api/patient';
+import { formatErrorMessage } from '@/utils/request';
 
 const submitting = ref(false);
 const today = new Date().toISOString().split('T')[0];
 
-const stages = ['V1', 'V2', 'V3', 'V4'];
-const stageIndex = ref(0);
-
-const relationships = [
-  { value: 'definitely_related', label: '肯定相关' },
-  { value: 'probably_related', label: '可能相关' },
-  { value: 'possibly_related', label: '可疑相关' },
-  { value: 'unlikely_related', label: '可能无关' },
-  { value: 'not_related', label: '肯定无关' },
-];
-const relationshipIndex = ref(0);
-
-const outcomes = [
-  { value: 'recovered', label: '已恢复' },
-  { value: 'recovering', label: '恢复中' },
-  { value: 'not_recovered', label: '未恢复' },
-  { value: 'sequelae', label: '有后遗症' },
-  { value: 'death', label: '死亡' },
-  { value: 'unknown', label: '未知' },
-];
-const outcomeIndex = ref(0);
-
-const uploadedFiles = ref<any[]>([]);
-
 const formData = ref({
   eventName: '',
-  severity: 'mild',
   occurredDate: '',
   occurredTime: '',
-  duration: '',
-  relationship: 'definitely_related',
-  medicalIntervention: false,
-  interventionDetails: '',
-  outcome: 'recovered',
-  stage: 'V1',
-  description: '',
+  isOngoing: false,
+  endDate: '',
+  endTime: '',
 });
-
-// 严重程度改变
-const onSeverityChange = (e: any) => {
-  formData.value.severity = e.detail.value;
-};
 
 // 发生日期改变
 const onOccurredDateChange = (e: any) => {
@@ -233,83 +119,33 @@ const onOccurredTimeChange = (e: any) => {
   formData.value.occurredTime = e.detail.value;
 };
 
-// 关系改变
-const onRelationshipChange = (e: any) => {
-  relationshipIndex.value = e.detail.value;
-  formData.value.relationship = relationships[relationshipIndex.value].value;
-};
-
-// 医疗干预改变
-const onInterventionChange = (e: any) => {
-  formData.value.medicalIntervention = e.detail.value === 'true';
-  if (!formData.value.medicalIntervention) {
-    formData.value.interventionDetails = '';
+// 是否持续改变
+const onOngoingChange = (e: any) => {
+  formData.value.isOngoing = e.detail.value === 'true';
+  if (formData.value.isOngoing) {
+    formData.value.endDate = '';
+    formData.value.endTime = '';
   }
 };
 
-// 结果改变
-const onOutcomeChange = (e: any) => {
-  outcomeIndex.value = e.detail.value;
-  formData.value.outcome = outcomes[outcomeIndex.value].value;
+// 结束日期改变
+const onEndDateChange = (e: any) => {
+  formData.value.endDate = e.detail.value;
 };
 
-// 阶段改变
-const onStageChange = (e: any) => {
-  stageIndex.value = e.detail.value;
-  formData.value.stage = stages[stageIndex.value];
-};
-
-// 上传附件
-const handleUpload = async () => {
-  try {
-    const res = await uni.chooseImage({
-      count: 1,
-      sizeType: ['compressed'],
-      sourceType: ['album', 'camera'],
-    });
-
-    if (res[1].tempFilePaths && res[1].tempFilePaths.length > 0) {
-      // TODO: 上传到服务器
-      uploadedFiles.value.push({
-        name: `附件${uploadedFiles.value.length + 1}`,
-        path: res[1].tempFilePaths[0],
-      });
-
-      uni.showToast({
-        title: '上传成功',
-        icon: 'success',
-      });
-    }
-  } catch (error: any) {
-    console.error('选择图片失败:', error);
-  }
-};
-
-// 删除附件
-const removeFile = (index: number) => {
-  uploadedFiles.value.splice(index, 1);
+// 结束时间改变
+const onEndTimeChange = (e: any) => {
+  formData.value.endTime = e.detail.value;
 };
 
 // 表单验证
 const validateForm = () => {
   if (!formData.value.eventName) {
-    uni.showToast({ title: '请输入事件名称', icon: 'none' });
+    uni.showToast({ title: '请输入不良事件名称', icon: 'none' });
     return false;
   }
   if (!formData.value.occurredDate) {
-    uni.showToast({ title: '请选择发生日期', icon: 'none' });
-    return false;
-  }
-  if (!formData.value.relationship) {
-    uni.showToast({ title: '请选择与研究药物关系', icon: 'none' });
-    return false;
-  }
-  if (!formData.value.outcome) {
-    uni.showToast({ title: '请选择结果', icon: 'none' });
-    return false;
-  }
-  if (!formData.value.stage) {
-    uni.showToast({ title: '请选择所属阶段', icon: 'none' });
+    uni.showToast({ title: '请选择开始日期', icon: 'none' });
     return false;
   }
   return true;
@@ -327,18 +163,32 @@ const handleSubmit = async () => {
     // 获取患者信息
     const patient = await patientAPI.getMyInfo();
 
-    // 构建occurredAt
-    let occurredAt = formData.value.occurredDate;
+    // 构建onsetDate（开始时间）
+    let onsetDate = formData.value.occurredDate;
     if (formData.value.occurredTime) {
-      occurredAt += ' ' + formData.value.occurredTime;
+      onsetDate += ' ' + formData.value.occurredTime;
     }
 
-    // 提交不良事件
+    // 构建endDate（结束时间）
+    let endDate: string | undefined = undefined;
+    if (!formData.value.isOngoing && formData.value.endDate) {
+      endDate = formData.value.endDate;
+      if (formData.value.endTime) {
+        endDate += ' ' + formData.value.endTime;
+      }
+    }
+
+    // 提交不良事件（只提交必要字段）
     await adverseEventAPI.create({
-      ...formData.value,
-      patientId: patient.id,
-      occurredAt,
-      attachments: uploadedFiles.value.map(f => f.path),
+      patientId: Number(patient.id), // 确保转换为数字
+      eventName: formData.value.eventName,
+      severity: 'mild', // 默认轻度
+      isSerious: false, // 默认非严重
+      onsetDate,
+      isOngoing: formData.value.isOngoing,
+      endDate,
+      description: formData.value.eventName, // 使用事件名称作为描述
+      stage: patient.currentStage || 'V1', // 使用患者当前阶段
     });
 
     uni.showToast({
@@ -352,8 +202,9 @@ const handleSubmit = async () => {
       uni.navigateBack();
     }, 1500);
   } catch (error: any) {
+    console.error('上报不良事件失败:', error);
     uni.showToast({
-      title: error.message || '上报失败',
+      title: formatErrorMessage(error.message, '上报失败'),
       icon: 'none',
     });
   } finally {

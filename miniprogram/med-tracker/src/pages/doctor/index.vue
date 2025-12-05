@@ -1,5 +1,8 @@
 <template>
   <view class="doctor-home-container">
+    <!-- 顶部导航栏 -->
+    <DoctorNav current="patients" />
+
     <!-- 顶部统计卡片 -->
     <view class="stats-section">
       <view class="stat-card">
@@ -92,8 +95,9 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { patientAPI } from '../../api/patient';
+import { onShow } from '@dcloudio/uni-app';
 import { doctorAPI } from '../../api/doctor';
+import DoctorNav from '../../components/doctor-nav/index.vue';
 
 const loading = ref(false);
 const patients = ref<any[]>([]);
@@ -141,7 +145,7 @@ const loadPatients = async () => {
     loading.value = true;
 
     // 获取我的患者列表
-    const result = await patientAPI.getList({});
+    const result = await doctorAPI.getMyPatients();
     patients.value = result.items || result || [];
 
     // 计算统计数据
@@ -149,6 +153,7 @@ const loadPatients = async () => {
     stats.value.pendingReview = patients.value.filter(p => p.pendingReview).length;
     stats.value.activePatients = patients.value.filter(p => p.currentStage !== 'completed').length;
   } catch (error: any) {
+    console.error('加载患者列表失败:', error);
     uni.showToast({
       title: '加载失败',
       icon: 'none',
@@ -190,6 +195,7 @@ onShow(() => {
   min-height: 100vh;
   background-color: #f5f5f5;
   padding-bottom: 30rpx;
+  padding-top: calc(var(--status-bar-height, 44px) + 100rpx);
 }
 
 /* 统计卡片 */

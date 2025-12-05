@@ -83,7 +83,7 @@ export class ScaleController {
   }
 
   @Get('records')
-  @Roles('super_admin', 'admin', 'doctor')
+  @Roles('super_admin', 'admin', 'doctor', 'patient')
   @ApiOperation({ summary: '查询量表记录列表(支持分页和筛选)' })
   async findAllRecords(@Query() query: QueryScaleRecordDto) {
     return this.scaleService.findAllRecords(query);

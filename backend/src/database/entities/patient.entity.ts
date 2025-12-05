@@ -47,6 +47,15 @@ export class Patient {
   @JoinColumn({ name: 'hospital_id' })
   hospital: Hospital;
 
+  @Column({ type: 'varchar', length: 50, nullable: true, name: 'emergency_contact', comment: '紧急联系人' })
+  emergencyContact: string;
+
+  @Column({ type: 'varchar', length: 20, nullable: true, name: 'emergency_phone', comment: '紧急联系电话' })
+  emergencyPhone: string;
+
+  @Column({ type: 'text', nullable: true, comment: '诊断信息' })
+  diagnosis: string;
+
   @Column({
     type: 'varchar',
     length: 10,

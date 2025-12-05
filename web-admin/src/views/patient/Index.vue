@@ -288,8 +288,8 @@ const fetchHospitals = async () => {
 
 const fetchDoctors = async (hospitalId?: number) => {
   try {
-    const res = await doctorAPI.getList({ hospitalId });
-    return res.items || [];
+    const res = await doctorAPI.getList({ hospitalId, auditStatus: 'approved' });
+    return res.list || [];
   } catch (error: any) {
     ElMessage.error(error.message || '获取医生列表失败');
     return [];

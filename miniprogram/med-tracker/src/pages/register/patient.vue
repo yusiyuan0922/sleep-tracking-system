@@ -93,13 +93,12 @@
         <text class="label">主治医生 <text class="required">*</text></text>
         <picker
           mode="selector"
-          :range="doctors"
-          range-key="name"
+          :range="doctorNames"
           @change="onDoctorChange"
           :disabled="!formData.hospitalId"
         >
           <view class="picker">
-            <text v-if="selectedDoctor">{{ selectedDoctor.name }}</text>
+            <text v-if="selectedDoctor">{{ selectedDoctor.user?.name || selectedDoctor.name }}</text>
             <text v-else class="placeholder">请选择医生</text>
           </view>
         </picker>
@@ -124,7 +123,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { patientAPI } from '@/api/patient';
 import { hospitalAPI } from '@/api/hospital';
 import { doctorAPI } from '@/api/doctor';
@@ -136,6 +135,11 @@ const selectedHospital = ref<any>(null);
 const selectedDoctor = ref<any>(null);
 
 const today = new Date().toISOString().split('T')[0];
+
+// 计算属性：提取医生姓名列表
+const doctorNames = computed(() => {
+  return doctors.value.map(doctor => doctor.user?.name || '未知医生');
+});
 
 const formData = ref({
   name: '',
@@ -165,8 +169,8 @@ const loadHospitals = async () => {
 // 加载医生列表
 const loadDoctors = async (hospitalId: number) => {
   try {
-    const result = await doctorAPI.getList({ hospitalId });
-    doctors.value = result.items || [];
+    const result = await doctorAPI.getList({ hospitalId, auditStatus: 'approved' });
+    doctors.value = result.list || [];
   } catch (error: any) {
     uni.showToast({
       title: '加载医生列表失败',

@@ -3,17 +3,17 @@
     <!-- 患者信息卡片 -->
     <view class="patient-header-card">
       <view class="patient-avatar">
-        <text>{{ patientInfo.name?.charAt(0) }}</text>
+        <text>{{ patientInfo.user?.name?.charAt(0) || '患' }}</text>
       </view>
       <view class="patient-info">
         <view class="name-row">
-          <text class="patient-name">{{ patientInfo.name }}</text>
+          <text class="patient-name">{{ patientInfo.user?.name || '患者' }}</text>
           <view class="stage-badge" :class="'stage-' + patientInfo.currentStage?.toLowerCase()">
             {{ patientInfo.currentStage }}
           </view>
         </view>
-        <text class="patient-code">编号: {{ patientInfo.patientCode }}</text>
-        <text class="patient-meta">{{ patientInfo.gender === 'male' ? '男' : '女' }} | {{ patientInfo.birthDate }}</text>
+        <text class="patient-code">编号: {{ patientInfo.patientNo }}</text>
+        <text class="patient-meta">{{ patientInfo.user?.gender === 'male' ? '男' : '女' }} | {{ patientInfo.user?.birthDate }}</text>
       </view>
     </view>
 
@@ -37,7 +37,7 @@
         <view class="info-list">
           <view class="info-item">
             <text class="info-label">联系电话</text>
-            <text class="info-value">{{ patientInfo.phone }}</text>
+            <text class="info-value">{{ patientInfo.user?.phone || '未设置' }}</text>
           </view>
           <view class="info-item">
             <text class="info-label">入组日期</text>
@@ -240,7 +240,7 @@ const loadScaleRecords = async () => {
     const result = await scaleAPI.getRecords({
       patientId: patientId.value,
     });
-    scaleRecords.value = result.items || result || [];
+    scaleRecords.value = result.list || result.items || result || [];
   } catch (error: any) {
     console.error('加载量表记录失败:', error);
   }
@@ -249,10 +249,10 @@ const loadScaleRecords = async () => {
 // 加载用药记录
 const loadMedications = async () => {
   try {
-    const result = await medicationAPI.getList({
+    const result = await medicationAPI.getRecordList({
       patientId: patientId.value,
     });
-    medications.value = result.items || result || [];
+    medications.value = result.list || result.items || result || [];
   } catch (error: any) {
     console.error('加载用药记录失败:', error);
   }

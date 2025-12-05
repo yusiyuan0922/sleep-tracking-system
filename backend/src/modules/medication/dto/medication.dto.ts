@@ -11,44 +11,39 @@ import {
 } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 
-// 创建用药记录 DTO
+// 创建用药记录 DTO (合并用药)
 export class CreateMedicationRecordDto {
   @ApiProperty({ description: '患者ID' })
   @IsNumber()
   @IsNotEmpty()
   patientId: number;
 
-  @ApiProperty({ description: '阶段', enum: ['V1', 'V2', 'V3', 'V4'] })
-  @IsEnum(['V1', 'V2', 'V3', 'V4'])
-  @IsNotEmpty()
-  stage: 'V1' | 'V2' | 'V3' | 'V4';
-
-  @ApiProperty({ description: '药品名称' })
+  @ApiProperty({ description: '药品通用名' })
   @IsString()
   @IsNotEmpty()
   drugName: string;
 
-  @ApiProperty({ description: '规格，如10mg/片' })
+  @ApiProperty({ description: '剂型(规格)' })
   @IsString()
   @IsNotEmpty()
   specification: string;
 
-  @ApiProperty({ description: '每次剂量' })
+  @ApiProperty({ description: '单次剂量' })
   @IsNumber()
   @IsNotEmpty()
   dosage: number;
 
-  @ApiProperty({ description: '剂量单位，如mg/片/粒' })
+  @ApiProperty({ description: '剂量单位' })
   @IsString()
   @IsNotEmpty()
   unit: string;
 
-  @ApiProperty({ description: '用药频率，如每日1次' })
+  @ApiProperty({ description: '给药频率' })
   @IsString()
   @IsNotEmpty()
   frequency: string;
 
-  @ApiProperty({ description: '用药途径，如口服/注射' })
+  @ApiProperty({ description: '给药途径' })
   @IsString()
   @IsNotEmpty()
   route: string;
@@ -58,10 +53,15 @@ export class CreateMedicationRecordDto {
   @IsNotEmpty()
   startDate: string;
 
-  @ApiPropertyOptional({ description: '结束日期，格式：YYYY-MM-DD' })
+  @ApiPropertyOptional({ description: '结束日期，格式：YYYY-MM-DD(持续用药时为空)' })
   @IsDateString()
   @IsOptional()
   endDate?: string;
+
+  @ApiProperty({ description: '使用原因/适应症' })
+  @IsString()
+  @IsNotEmpty()
+  indication: string;
 
   @ApiPropertyOptional({ description: '备注' })
   @IsString()
@@ -117,10 +117,10 @@ export class CreateConcomitantMedicationDto {
   @IsNotEmpty()
   patientId: number;
 
-  @ApiProperty({ description: '阶段（V1不需要合并用药）', enum: ['V2', 'V3', 'V4'] })
-  @IsEnum(['V2', 'V3', 'V4'])
-  @IsNotEmpty()
-  stage: 'V2' | 'V3' | 'V4';
+  @ApiPropertyOptional({ description: '阶段（可选）', enum: ['V1', 'V2', 'V3', 'V4'] })
+  @IsEnum(['V1', 'V2', 'V3', 'V4'])
+  @IsOptional()
+  stage?: 'V1' | 'V2' | 'V3' | 'V4';
 
   @ApiProperty({ description: '药品名称' })
   @IsString()

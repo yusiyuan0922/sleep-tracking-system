@@ -24,10 +24,10 @@ export class ConcomitantMedication {
   @Column({
     type: 'varchar',
     length: 10,
-    nullable: false,
-    comment: '阶段:V2/V3/V4(V1不需要)',
+    nullable: true,
+    comment: '阶段:V1/V2/V3/V4(可选)',
   })
-  stage: 'V2' | 'V3' | 'V4';
+  stage: 'V1' | 'V2' | 'V3' | 'V4';
 
   @Column({ type: 'varchar', length: 100, nullable: false, name: 'drug_name', comment: '药品名称' })
   drugName: string;

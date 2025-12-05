@@ -1,5 +1,8 @@
 <template>
   <view class="pending-review-container">
+    <!-- 顶部导航栏 -->
+    <DoctorNav current="review" />
+
     <!-- 顶部统计 -->
     <view class="stats-card">
       <view class="stat-item">
@@ -58,13 +61,16 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { patientAPI } from '../../api/patient';
+import { onShow } from '@dcloudio/uni-app';
+import { doctorAPI } from '../../api/doctor';
+import DoctorNav from '../../components/doctor-nav/index.vue';
 
 const loading = ref(false);
 const patients = ref<any[]>([]);
 
 // 待审核患者列表
 const pendingPatients = computed(() => {
+  if (!Array.isArray(patients.value)) return [];
   return patients.value.filter(p => p.pendingReview === true);
 });
 
@@ -78,8 +84,9 @@ const loadPatients = async () => {
   try {
     loading.value = true;
 
-    const result = await patientAPI.getList({});
-    patients.value = result.items || result || [];
+    const result = await doctorAPI.getMyPatients();
+    const list = result.items || result || [];
+    patients.value = Array.isArray(list) ? list : [];
   } catch (error: any) {
     uni.showToast({
       title: '加载失败',
@@ -112,6 +119,7 @@ onShow(() => {
   min-height: 100vh;
   background-color: #f5f5f5;
   padding-bottom: 30rpx;
+  padding-top: calc(var(--status-bar-height, 44px) + 100rpx);
 }
 
 /* 统计卡片 */

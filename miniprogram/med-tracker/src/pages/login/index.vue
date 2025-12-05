@@ -8,12 +8,21 @@
 
     <view class="login-section">
       <button
-        class="login-btn"
+        class="login-btn patient"
         type="primary"
-        @click="handleWxLogin"
-        :loading="loading"
+        @click="handleWxLogin('patient')"
+        :loading="loading && loginType === 'patient'"
       >
-        <text class="btn-text">微信授权登录</text>
+        <text class="btn-text">患者登录</text>
+      </button>
+
+      <button
+        class="login-btn doctor"
+        type="default"
+        @click="handleWxLogin('doctor')"
+        :loading="loading && loginType === 'doctor'"
+      >
+        <text class="btn-text doctor-text">医生登录</text>
       </button>
 
       <view class="tips">
@@ -30,14 +39,26 @@
 import { ref } from 'vue';
 import { authAPI } from '@/api/auth';
 import config from '@/config';
+import { formatErrorMessage } from '@/utils/request';
 
 const loading = ref(false);
+const loginType = ref<'patient' | 'doctor'>('patient');
 
 // 微信登录
-const handleWxLogin = async () => {
+const handleWxLogin = async (type: 'patient' | 'doctor') => {
   try {
     loading.value = true;
+    loginType.value = type;
 
+    // 如果是医生登录，先跳转到绑定手机号页面
+    if (type === 'doctor') {
+      uni.reLaunch({
+        url: '/pages/bind-phone/index',
+      });
+      return;
+    }
+
+    // 患者登录流程
     // 1. 获取微信登录code
     const loginRes = await uni.login({
       provider: 'weixin',
@@ -57,20 +78,20 @@ const handleWxLogin = async () => {
         duration: 1500,
       });
 
-      // 4. 跳转到首页
+      // 4. 根据用户角色跳转到对应页面
       setTimeout(() => {
-        if (result.user.role === 'patient' && !result.user.patientId) {
+        if (result.user.role === 'doctor') {
+          // 医生角色，跳转到首页（首页会显示医生端界面）
+          uni.switchTab({
+            url: '/pages/index/index',
+          });
+        } else if (result.user.role === 'patient' && !result.user.patientId) {
           // 患者未注册,跳转到注册页
           uni.reLaunch({
             url: '/pages/register/patient',
           });
-        } else if (result.user.role === 'doctor' && !result.user.doctorId) {
-          // 医生未绑定,跳转到绑定手机号页面
-          uni.reLaunch({
-            url: '/pages/bind-phone/index',
-          });
         } else {
-          // 已注册,跳转到首页
+          // 已注册患者,跳转到首页
           uni.switchTab({
             url: '/pages/index/index',
           });
@@ -82,7 +103,7 @@ const handleWxLogin = async () => {
   } catch (error: any) {
     console.error('登录失败:', error);
     uni.showToast({
-      title: error.message || '登录失败',
+      title: formatErrorMessage(error.message, '登录失败'),
       icon: 'none',
       duration: 2000,
     });
@@ -140,18 +161,32 @@ const handleWxLogin = async () => {
 .login-btn {
   width: 100%;
   height: 100rpx;
-  background-color: #ffffff;
-  color: #667eea;
   border-radius: 50rpx;
   font-size: 32rpx;
   font-weight: bold;
   display: flex;
   align-items: center;
   justify-content: center;
+  margin-bottom: 30rpx;
+}
+
+.login-btn.patient {
+  background-color: #ffffff;
+  color: #667eea;
+}
+
+.login-btn.doctor {
+  background-color: rgba(255, 255, 255, 0.2);
+  border: 2rpx solid #ffffff;
+  color: #ffffff;
 }
 
 .btn-text {
   color: #667eea;
+}
+
+.doctor-text {
+  color: #ffffff;
 }
 
 .tips {

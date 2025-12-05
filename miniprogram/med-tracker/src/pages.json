@@ -61,15 +61,21 @@
       }
     },
     {
+      "path": "pages/scale/history",
+      "style": {
+        "navigationBarTitleText": "历史记录"
+      }
+    },
+    {
       "path": "pages/medication/add",
       "style": {
-        "navigationBarTitleText": "添加用药记录"
+        "navigationBarTitleText": "添加合并用药"
       }
     },
     {
       "path": "pages/medication/list",
       "style": {
-        "navigationBarTitleText": "用药记录"
+        "navigationBarTitleText": "合并用药"
       }
     },
     {
@@ -100,6 +106,36 @@
       "path": "pages/profile/index",
       "style": {
         "navigationBarTitleText": "个人中心"
+      }
+    },
+    {
+      "path": "pages/doctor/index",
+      "style": {
+        "navigationBarTitleText": "患者管理"
+      }
+    },
+    {
+      "path": "pages/doctor/patient-detail",
+      "style": {
+        "navigationBarTitleText": "患者详情"
+      }
+    },
+    {
+      "path": "pages/doctor/review",
+      "style": {
+        "navigationBarTitleText": "待审核"
+      }
+    },
+    {
+      "path": "pages/doctor/fill-scale",
+      "style": {
+        "navigationBarTitleText": "填写量表"
+      }
+    },
+    {
+      "path": "pages/doctor/pending-review",
+      "style": {
+        "navigationBarTitleText": "待审核列表"
       }
     }
   ],

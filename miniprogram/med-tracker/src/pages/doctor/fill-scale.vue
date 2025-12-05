@@ -31,8 +31,8 @@
               <text v-else class="radio-unchecked">○</text>
             </view>
             <view class="option-content">
-              <text class="option-text">{{ option.text }}</text>
-              <text class="option-score">{{ option.score }}分</text>
+              <text class="option-text">{{ option.label || option.text }}</text>
+              <text class="option-score">{{ option.value ?? option.score }}分</text>
             </view>
           </view>
         </view>
@@ -80,6 +80,7 @@ import { patientAPI } from '../../api/patient';
 const patientId = ref(0);
 const patientName = ref('');
 const scaleCode = ref('');
+const scaleId = ref(0);
 const stage = ref('');
 const submitting = ref(false);
 
@@ -107,6 +108,7 @@ const isAllAnswered = computed(() => {
 const loadScale = async () => {
   try {
     const result = await scaleAPI.getDetail(scaleCode.value);
+    scaleId.value = result.id;
     questions.value = result.questions || [];
     // 初始化答案数组
     answers.value = new Array(questions.value.length).fill(null);
@@ -131,6 +133,14 @@ const loadPatientInfo = async () => {
 // 选择答案
 const selectAnswer = (optionIndex: number) => {
   answers.value[currentQuestionIndex.value] = optionIndex;
+
+  // 如果不是最后一题,自动跳转到下一题
+  if (currentQuestionIndex.value < questions.value.length - 1) {
+    // 延迟300ms跳转,让用户看到选中效果
+    setTimeout(() => {
+      currentQuestionIndex.value++;
+    }, 300);
+  }
 };
 
 // 上一题
@@ -173,25 +183,18 @@ const submitScale = async () => {
   try {
     submitting.value = true;
 
-    // 构建答案详情
-    const answerDetails = questions.value.map((q, index) => ({
-      questionId: q.id,
-      question: q.question,
-      answer: answers.value[index],
-      score: q.options[answers.value[index]].score,
-    }));
-
-    // 计算总分
-    const totalScore = answerDetails.reduce((sum, item) => sum + item.score, 0);
+    // 构建答案数组(只提交分值)
+    const answerValues = questions.value.map((q, index) => {
+      const selectedOption = q.options[answers.value[index]];
+      return selectedOption.value ?? selectedOption.score;
+    });
 
     // 提交
     await scaleAPI.submit({
       patientId: patientId.value,
-      scaleCode: scaleCode.value,
+      scaleId: scaleId.value,
       stage: stage.value,
-      answers: answerDetails,
-      totalScore,
-      filledByDoctor: true,
+      answers: answerValues,
     });
 
     uni.showToast({

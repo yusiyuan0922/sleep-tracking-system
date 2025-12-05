@@ -31,15 +31,18 @@ export class ScaleConfig {
   })
   type: 'self' | 'doctor';
 
-  @Column({ type: 'int', nullable: false, name: 'total_items', comment: '题目总数' })
+  @Column({ type: 'text', nullable: true, comment: '量表描述' })
+  description: string;
+
+  @Column({ type: 'int', nullable: true, name: 'total_items', comment: '题目总数' })
   totalItems: number;
 
-  @Column({ type: 'int', nullable: false, name: 'max_score', comment: '最高分数' })
+  @Column({ type: 'int', nullable: true, name: 'max_score', comment: '最高分数' })
   maxScore: number;
 
   @Column({
     type: 'jsonb',
-    nullable: false,
+    nullable: true,
     comment: '题目配置:[{question, options:[{label, value}]}]',
   })
   questions: {
@@ -61,6 +64,13 @@ export class ScaleConfig {
       description: string;
     }[];
   };
+
+  @Column({
+    type: 'jsonb',
+    nullable: true,
+    comment: '适用阶段数组:["V1","V2","V3","V4"]',
+  })
+  stages: ('V1' | 'V2' | 'V3' | 'V4')[];
 
   @Column({
     type: 'varchar',

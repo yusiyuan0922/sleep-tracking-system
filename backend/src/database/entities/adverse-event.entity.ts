@@ -14,6 +14,9 @@ export class AdverseEvent {
   @PrimaryGeneratedColumn('increment', { type: 'bigint' })
   id: number;
 
+  @Column({ type: 'varchar', length: 50, nullable: false, unique: true, name: 'ae_number', comment: 'AE序号' })
+  aeNumber: string;
+
   @Column({ type: 'bigint', nullable: false, name: 'patient_id' })
   patientId: number;
 
@@ -56,6 +59,15 @@ export class AdverseEvent {
     comment: '发生时间',
   })
   onsetDate: Date;
+
+  @Column({
+    type: 'boolean',
+    nullable: false,
+    default: false,
+    name: 'is_ongoing',
+    comment: '是否持续中',
+  })
+  isOngoing: boolean;
 
   @Column({
     type: 'timestamp',

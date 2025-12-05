@@ -1,13 +1,94 @@
 <template>
-  <view class="profile-container">
+  <view class="profile-container" :class="{ 'doctor-mode': userRole === 'doctor' }">
+    <!-- 医生端导航栏 -->
+    <DoctorNav v-if="userRole === 'doctor'" current="profile" />
+
+    <!-- 医生端 -->
+    <view v-if="userRole === 'doctor'" class="doctor-profile">
+      <!-- 医生信息卡片 -->
+      <view class="profile-header">
+        <view class="avatar-section">
+          <text class="avatar-icon">👨‍⚕️</text>
+        </view>
+        <view class="info-section">
+          <text class="doctor-name">{{ doctorInfo.user?.name || '医生' }}</text>
+          <text class="doctor-title">{{ doctorInfo.title || '医师' }}</text>
+        </view>
+      </view>
+
+      <!-- 基本信息 -->
+      <view class="info-card">
+        <view class="card-title">
+          <text>基本信息</text>
+        </view>
+        <view class="info-list">
+          <view class="info-item">
+            <text class="info-label">所属医院</text>
+            <text class="info-value">{{ doctorInfo.hospital?.name || '未设置' }}</text>
+          </view>
+          <view class="info-item">
+            <text class="info-label">科室</text>
+            <text class="info-value">{{ doctorInfo.department || '未设置' }}</text>
+          </view>
+          <view class="info-item">
+            <text class="info-label">联系电话</text>
+            <text class="info-value">{{ doctorInfo.user?.phone || '未设置' }}</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 统计信息 -->
+      <view class="info-card">
+        <view class="card-title">
+          <text>统计信息</text>
+        </view>
+        <view class="stats-grid">
+          <view class="stat-item">
+            <text class="stat-value">{{ stats.totalPatients }}</text>
+            <text class="stat-label">管理患者</text>
+          </view>
+          <view class="stat-item">
+            <text class="stat-value">{{ stats.pendingReview }}</text>
+            <text class="stat-label">待审核</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 功能菜单 -->
+      <view class="menu-list">
+        <view class="menu-item" @click="goToPage('/pages/doctor/index')">
+          <text class="menu-icon">👥</text>
+          <text class="menu-text">患者管理</text>
+          <text class="menu-arrow">›</text>
+        </view>
+        <view class="menu-item" @click="goToPage('/pages/doctor/pending-review')">
+          <text class="menu-icon">📋</text>
+          <text class="menu-text">待审核列表</text>
+          <text class="menu-arrow">›</text>
+        </view>
+        <view class="menu-item" @click="goToPage('/pages/doctor/fill-scale')">
+          <text class="menu-icon">📊</text>
+          <text class="menu-text">填写量表</text>
+          <text class="menu-arrow">›</text>
+        </view>
+      </view>
+
+      <!-- 退出登录 -->
+      <view class="logout-section">
+        <button class="logout-btn" @click="handleLogout">退出登录</button>
+      </view>
+    </view>
+
+    <!-- 患者端 -->
+    <view v-else-if="userRole === 'patient'" class="patient-profile">
     <!-- 患者信息卡片 -->
     <view class="profile-header">
       <view class="avatar-section">
         <text class="avatar-icon">👤</text>
       </view>
       <view class="info-section">
-        <text class="patient-name">{{ patientInfo.name }}</text>
-        <text class="patient-code">编号: {{ patientInfo.patientCode }}</text>
+        <text class="patient-name">{{ patientInfo.user?.name || '患者' }}</text>
+        <text class="patient-code">编号: {{ patientInfo.patientNo }}</text>
       </view>
       <view class="stage-badge" :class="'stage-' + patientInfo.currentStage?.toLowerCase()">
         {{ patientInfo.currentStage }}
@@ -22,15 +103,15 @@
       <view class="info-list">
         <view class="info-item">
           <text class="info-label">性别</text>
-          <text class="info-value">{{ patientInfo.gender === 'male' ? '男' : '女' }}</text>
+          <text class="info-value">{{ patientInfo.user?.gender === 'male' ? '男' : '女' }}</text>
         </view>
         <view class="info-item">
           <text class="info-label">出生日期</text>
-          <text class="info-value">{{ patientInfo.birthDate }}</text>
+          <text class="info-value">{{ patientInfo.user?.birthDate }}</text>
         </view>
         <view class="info-item">
           <text class="info-label">联系电话</text>
-          <text class="info-value">{{ patientInfo.phone }}</text>
+          <text class="info-value">{{ patientInfo.user?.phone }}</text>
         </view>
         <view v-if="patientInfo.emergencyContact" class="info-item">
           <text class="info-label">紧急联系人</text>
@@ -55,7 +136,7 @@
         </view>
         <view class="info-item">
           <text class="info-label">主治医生</text>
-          <text class="info-value">{{ patientInfo.doctor?.name }}</text>
+          <text class="info-value">{{ patientInfo.doctor?.user?.name || '未分配' }}</text>
         </view>
         <view v-if="patientInfo.diagnosis" class="info-item vertical">
           <text class="info-label">诊断信息</text>
@@ -117,15 +198,29 @@
     <view class="logout-section">
       <button class="logout-btn" @click="handleLogout">退出登录</button>
     </view>
+    </view>
   </view>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { patientAPI } from '../../api/patient';
-import { config } from '../../config';
+import { doctorAPI } from '../../api/doctor';
+import config from '../../config';
+import DoctorNav from '../../components/doctor-nav/index.vue';
 
+// 用户角色
+const userRole = ref<'patient' | 'doctor' | ''>('');
+
+// 患者端数据
 const patientInfo = ref<any>({});
+
+// 医生端数据
+const doctorInfo = ref<any>({});
+const stats = ref({
+  totalPatients: 0,
+  pendingReview: 0,
+});
 
 // 阶段进度
 const stageProgress = computed(() => {
@@ -145,6 +240,14 @@ const stageProgress = computed(() => {
   });
 });
 
+// 初始化用户角色
+const initUserRole = () => {
+  const userInfo = uni.getStorageSync(config.userInfoKey);
+  if (userInfo) {
+    userRole.value = userInfo.role || 'patient';
+  }
+};
+
 // 加载患者信息
 const loadPatientInfo = async () => {
   try {
@@ -158,9 +261,62 @@ const loadPatientInfo = async () => {
   }
 };
 
+// 加载医生信息
+const loadDoctorInfo = async () => {
+  try {
+    const result = await doctorAPI.getMyInfo();
+    doctorInfo.value = result;
+
+    // 加载统计信息
+    const patients = await doctorAPI.getMyPatients();
+    const patientList = patients.items || patients || [];
+    stats.value.totalPatients = patientList.length;
+    stats.value.pendingReview = patientList.filter((p: any) => p.pendingReview).length;
+  } catch (error: any) {
+    console.error('加载医生信息失败:', error);
+
+    // 降级处理：显示基本信息
+    const userInfo = uni.getStorageSync(config.userInfoKey);
+    doctorInfo.value = {
+      user: {
+        name: userInfo.name || '医生',
+      },
+    };
+
+    uni.showToast({
+      title: '加载失败',
+      icon: 'none',
+    });
+  }
+};
+
 // 跳转到页面
 const goToPage = (url: string) => {
-  uni.navigateTo({ url });
+  // 医生端主页面使用 reLaunch
+  const doctorMainPages = [
+    '/pages/doctor/index',
+    '/pages/doctor/pending-review',
+    '/pages/profile/index',
+  ];
+
+  // 患者端 tabBar 页面
+  const tabBarPages = [
+    '/pages/index/index',
+    '/pages/scale/list',
+    '/pages/medication/list',
+    '/pages/profile/index',
+  ];
+
+  if (userRole.value === 'doctor' && doctorMainPages.includes(url)) {
+    // 医生端主页面用 reLaunch
+    uni.reLaunch({ url });
+  } else if (userRole.value === 'patient' && tabBarPages.includes(url)) {
+    // 患者端 tabBar 页面用 switchTab
+    uni.switchTab({ url });
+  } else {
+    // 其他页面用 navigateTo
+    uni.navigateTo({ url });
+  }
 };
 
 // 退出登录
@@ -184,7 +340,13 @@ const handleLogout = () => {
 };
 
 onMounted(() => {
-  loadPatientInfo();
+  initUserRole();
+
+  if (userRole.value === 'doctor') {
+    loadDoctorInfo();
+  } else if (userRole.value === 'patient') {
+    loadPatientInfo();
+  }
 });
 </script>
 
@@ -193,6 +355,10 @@ onMounted(() => {
   min-height: 100vh;
   background-color: #f5f5f5;
   padding-bottom: 30rpx;
+}
+
+.profile-container.doctor-mode {
+  padding-top: calc(var(--status-bar-height, 44px) + 100rpx);
 }
 
 /* 顶部信息 */
@@ -430,5 +596,53 @@ onMounted(() => {
   font-size: 28rpx;
   font-weight: bold;
   border: 2rpx solid #ff4d4f;
+}
+
+/* 医生端样式 */
+.doctor-profile {
+  width: 100%;
+}
+
+.doctor-name {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #ffffff;
+}
+
+.doctor-title {
+  font-size: 26rpx;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20rpx;
+}
+
+.stat-item {
+  text-align: center;
+  padding: 30rpx 20rpx;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 100%);
+  border-radius: 12rpx;
+}
+
+.stat-value {
+  display: block;
+  font-size: 48rpx;
+  font-weight: bold;
+  color: #667eea;
+  margin-bottom: 10rpx;
+}
+
+.stat-label {
+  display: block;
+  font-size: 24rpx;
+  color: #999999;
+}
+
+/* 患者端容器 */
+.patient-profile {
+  width: 100%;
 }
 </style>

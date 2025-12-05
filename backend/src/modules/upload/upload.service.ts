@@ -1,29 +1,67 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
-import OSS from 'ali-oss';
+import { Client as MinioClient } from 'minio';
 import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class UploadService {
-  private ossClient: OSS;
+  private minioClient: MinioClient;
+  private bucket: string;
 
   constructor() {
-    // 只有在配置了OSS时才初始化客户端
+    // 只有在配置了 MinIO 时才初始化客户端
     if (
-      process.env.OSS_ACCESS_KEY_ID &&
-      process.env.OSS_ACCESS_KEY_SECRET &&
-      process.env.OSS_BUCKET
+      process.env.MINIO_ACCESS_KEY &&
+      process.env.MINIO_SECRET_KEY &&
+      process.env.MINIO_BUCKET
     ) {
-      this.ossClient = new OSS({
-        region: process.env.OSS_REGION || 'oss-cn-hangzhou',
-        accessKeyId: process.env.OSS_ACCESS_KEY_ID,
-        accessKeySecret: process.env.OSS_ACCESS_KEY_SECRET,
-        bucket: process.env.OSS_BUCKET,
+      this.bucket = process.env.MINIO_BUCKET;
+      this.minioClient = new MinioClient({
+        endPoint: process.env.MINIO_ENDPOINT || 'localhost',
+        port: parseInt(process.env.MINIO_PORT || '9000'),
+        useSSL: process.env.MINIO_USE_SSL === 'true',
+        accessKey: process.env.MINIO_ACCESS_KEY,
+        secretKey: process.env.MINIO_SECRET_KEY,
       });
+
+      // 确保 bucket 存在
+      this.ensureBucketExists();
     }
   }
 
   /**
-   * 上传文件到OSS
+   * 确保 bucket 存在,如果不存在则创建并设置公开读策略
+   */
+  private async ensureBucketExists() {
+    try {
+      const exists = await this.minioClient.bucketExists(this.bucket);
+      if (!exists) {
+        await this.minioClient.makeBucket(this.bucket, 'us-east-1');
+
+        // 设置公开读策略
+        const policy = {
+          Version: '2012-10-17',
+          Statement: [
+            {
+              Effect: 'Allow',
+              Principal: { AWS: ['*'] },
+              Action: ['s3:GetObject'],
+              Resource: [`arn:aws:s3:::${this.bucket}/*`],
+            },
+          ],
+        };
+
+        await this.minioClient.setBucketPolicy(
+          this.bucket,
+          JSON.stringify(policy),
+        );
+      }
+    } catch (error) {
+      console.error('Error ensuring bucket exists:', error.message);
+    }
+  }
+
+  /**
+   * 上传文件到 MinIO
    */
   async uploadFile(
     file: Express.Multer.File,
@@ -38,9 +76,9 @@ export class UploadService {
       throw new BadRequestException('文件不能为空');
     }
 
-    // 检查OSS是否已配置
-    if (!this.ossClient) {
-      throw new BadRequestException('OSS未配置,请联系管理员配置OSS服务');
+    // 检查 MinIO 是否已配置
+    if (!this.minioClient) {
+      throw new BadRequestException('MinIO未配置,请联系管理员配置MinIO服务');
     }
 
     // 验证文件大小 (最大10MB)
@@ -68,13 +106,28 @@ export class UploadService {
       // 生成唯一文件名
       const ext = file.originalname.split('.').pop();
       const fileName = `${uuidv4()}.${ext}`;
-      const ossPath = `${folder}/${new Date().getFullYear()}/${new Date().getMonth() + 1}/${fileName}`;
+      const year = new Date().getFullYear();
+      const month = new Date().getMonth() + 1;
+      const objectName = `${folder}/${year}/${month}/${fileName}`;
 
-      // 上传到OSS
-      const result = await this.ossClient.put(ossPath, file.buffer);
+      // 上传到 MinIO
+      await this.minioClient.putObject(
+        this.bucket,
+        objectName,
+        file.buffer,
+        file.size,
+        {
+          'Content-Type': file.mimetype,
+        },
+      );
+
+      // 手动生成 URL
+      const publicEndpoint =
+        process.env.MINIO_PUBLIC_ENDPOINT || 'http://localhost:9000';
+      const url = `${publicEndpoint}/${this.bucket}/${objectName}`;
 
       return {
-        url: result.url,
+        url,
         fileName: file.originalname,
         fileSize: file.size,
         fileType: this.getFileType(file.mimetype),
@@ -103,11 +156,26 @@ export class UploadService {
   }
 
   /**
-   * 删除OSS文件
+   * 删除 MinIO 文件
    */
-  async deleteFile(ossPath: string): Promise<void> {
+  async deleteFile(objectName: string): Promise<void> {
+    if (!this.minioClient) {
+      throw new BadRequestException('MinIO未配置');
+    }
+
     try {
-      await this.ossClient.delete(ossPath);
+      // objectName 可能包含完整URL,需要提取路径
+      let pathToDelete = objectName;
+
+      // 如果是完整URL,提取路径部分
+      if (objectName.includes(this.bucket)) {
+        const urlParts = objectName.split(`${this.bucket}/`);
+        if (urlParts.length > 1) {
+          pathToDelete = urlParts[1];
+        }
+      }
+
+      await this.minioClient.removeObject(this.bucket, pathToDelete);
     } catch (error) {
       throw new BadRequestException(`文件删除失败: ${error.message}`);
     }

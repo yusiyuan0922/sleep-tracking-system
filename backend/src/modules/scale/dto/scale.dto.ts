@@ -37,17 +37,17 @@ export class CreateScaleConfigDto {
   @IsNotEmpty()
   type: 'self' | 'doctor';
 
-  @ApiProperty({ description: '题目总数', example: 7 })
+  @ApiPropertyOptional({ description: '题目总数', example: 7 })
+  @IsOptional()
   @IsInt()
-  @IsNotEmpty()
-  totalItems: number;
+  totalItems?: number;
 
-  @ApiProperty({ description: '最高分数', example: 28 })
+  @ApiPropertyOptional({ description: '最高分数', example: 28 })
+  @IsOptional()
   @IsInt()
-  @IsNotEmpty()
-  maxScore: number;
+  maxScore?: number;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: '题目配置(JSON格式)',
     example: [
       {
@@ -62,9 +62,9 @@ export class CreateScaleConfigDto {
       },
     ],
   })
+  @IsOptional()
   @IsArray()
-  @IsNotEmpty()
-  questions: any;
+  questions?: any;
 
   @ApiPropertyOptional({
     description: '评分规则(JSON格式)',
@@ -80,6 +80,30 @@ export class CreateScaleConfigDto {
   @IsOptional()
   @IsObject()
   scoringRules?: any;
+
+  @ApiPropertyOptional({
+    description: '适用阶段数组',
+    example: ['V1', 'V2', 'V3'],
+    type: [String],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsEnum(['V1', 'V2', 'V3', 'V4'], { each: true })
+  stages?: ('V1' | 'V2' | 'V3' | 'V4')[];
+
+  @ApiPropertyOptional({ description: '量表描述' })
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @ApiPropertyOptional({
+    description: '状态',
+    enum: ['active', 'inactive'],
+    default: 'active',
+  })
+  @IsOptional()
+  @IsEnum(['active', 'inactive'])
+  status?: 'active' | 'inactive';
 }
 
 export class UpdateScaleConfigDto {
@@ -115,16 +139,28 @@ export class UpdateScaleConfigDto {
   @IsOptional()
   @IsEnum(['active', 'inactive'])
   status?: 'active' | 'inactive';
+
+  @ApiPropertyOptional({
+    description: '适用阶段数组',
+    example: ['V1', 'V2', 'V3'],
+    type: [String],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsEnum(['V1', 'V2', 'V3', 'V4'], { each: true })
+  stages?: ('V1' | 'V2' | 'V3' | 'V4')[];
 }
 
 // 提交量表记录DTO
 export class SubmitScaleRecordDto {
   @ApiProperty({ description: '患者ID', example: 1 })
+  @Type(() => Number)
   @IsInt()
   @IsNotEmpty()
   patientId: number;
 
   @ApiProperty({ description: '量表配置ID', example: 1 })
+  @Type(() => Number)
   @IsInt()
   @IsNotEmpty()
   scaleId: number;
@@ -145,6 +181,7 @@ export class SubmitScaleRecordDto {
   })
   @IsArray()
   @IsNotEmpty()
+  @Type(() => Number)
   answers: number[];
 }
 
@@ -163,6 +200,15 @@ export class QueryScaleRecordDto {
   @Type(() => Number)
   @IsInt()
   scaleId?: number;
+
+  @ApiPropertyOptional({
+    description: '量表代码',
+    enum: ['AIS', 'ESS', 'GAD7', 'PHQ9', 'HAMA', 'HAMD'],
+  })
+  @IsOptional()
+  @Transform(({ value }) => (value === '' ? undefined : value))
+  @IsEnum(['AIS', 'ESS', 'GAD7', 'PHQ9', 'HAMA', 'HAMD'])
+  scaleCode?: 'AIS' | 'ESS' | 'GAD7' | 'PHQ9' | 'HAMA' | 'HAMD';
 
   @ApiPropertyOptional({
     description: '阶段',

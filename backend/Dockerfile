@@ -51,4 +51,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
   CMD curl -f http://localhost:3000/ || exit 1
 
 # 启动命令
-CMD ["node", "dist/main.js"]
+CMD ["node", "dist/backend/src/main.js"]

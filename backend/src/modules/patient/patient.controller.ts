@@ -28,10 +28,13 @@ export class PatientController {
   constructor(private readonly patientService: PatientService) {}
 
   @Post('register')
-  @Roles('doctor')
-  @ApiOperation({ summary: '患者注册(医生为患者注册并绑定)' })
-  async register(@Body() registerPatientDto: RegisterPatientDto) {
-    return this.patientService.register(registerPatientDto);
+  @Roles('patient')
+  @ApiOperation({ summary: '患者注册(患者填写基本信息并选择医生)' })
+  async register(
+    @Body() registerPatientDto: RegisterPatientDto,
+    @CurrentUser() user: any,
+  ) {
+    return this.patientService.register(registerPatientDto, user.userId);
   }
 
   @Get()
@@ -53,7 +56,7 @@ export class PatientController {
     return this.patientService.findAll(query);
   }
 
-  @Get('my-info')
+  @Get('me')
   @Roles('patient')
   @ApiOperation({ summary: '患者查看自己的信息' })
   async getMyInfo(@CurrentUser() user: any) {

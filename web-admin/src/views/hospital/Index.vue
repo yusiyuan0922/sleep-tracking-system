@@ -11,14 +11,9 @@
       <el-table :data="tableData" v-loading="loading" border>
         <el-table-column prop="id" label="ID" width="80" />
         <el-table-column prop="name" label="医院名称" min-width="200" />
-        <el-table-column prop="code" label="医院代码" width="120" />
-        <el-table-column prop="level" label="医院等级" width="100">
-          <template #default="{ row }">
-            <el-tag>{{ row.level }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="address" label="地址" min-width="200" />
-        <el-table-column prop="contactPerson" label="联系人" width="100" />
+        <el-table-column prop="province" label="省份" width="120" />
+        <el-table-column prop="city" label="城市" width="120" />
+        <el-table-column prop="address" label="详细地址" min-width="200" />
         <el-table-column prop="contactPhone" label="联系电话" width="120" />
         <el-table-column prop="status" label="状态" width="100">
           <template #default="{ row }">
@@ -75,23 +70,14 @@
         <el-form-item label="医院名称" prop="name">
           <el-input v-model="formData.name" placeholder="请输入医院名称" />
         </el-form-item>
-        <el-form-item label="医院代码" prop="code">
-          <el-input v-model="formData.code" placeholder="请输入医院代码" />
+        <el-form-item label="省份" prop="province">
+          <el-input v-model="formData.province" placeholder="请输入省份" />
         </el-form-item>
-        <el-form-item label="医院等级" prop="level">
-          <el-select v-model="formData.level" placeholder="请选择医院等级" style="width: 100%">
-            <el-option label="三级甲等" value="三级甲等" />
-            <el-option label="三级乙等" value="三级乙等" />
-            <el-option label="二级甲等" value="二级甲等" />
-            <el-option label="二级乙等" value="二级乙等" />
-            <el-option label="一级甲等" value="一级甲等" />
-          </el-select>
+        <el-form-item label="城市" prop="city">
+          <el-input v-model="formData.city" placeholder="请输入城市" />
         </el-form-item>
-        <el-form-item label="地址" prop="address">
-          <el-input v-model="formData.address" placeholder="请输入医院地址" />
-        </el-form-item>
-        <el-form-item label="联系人" prop="contactPerson">
-          <el-input v-model="formData.contactPerson" placeholder="请输入联系人" />
+        <el-form-item label="详细地址" prop="address">
+          <el-input v-model="formData.address" placeholder="请输入详细地址" />
         </el-form-item>
         <el-form-item label="联系电话" prop="contactPhone">
           <el-input v-model="formData.contactPhone" placeholder="请输入联系电话" />
@@ -136,24 +122,15 @@ const pagination = reactive({
 const formData = reactive({
   id: null as number | null,
   name: '',
-  code: '',
-  level: '',
+  province: '',
+  city: '',
   address: '',
-  contactPerson: '',
   contactPhone: '',
   status: 'active' as 'active' | 'inactive',
 });
 
 const rules: FormRules = {
   name: [{ required: true, message: '请输入医院名称', trigger: 'blur' }],
-  code: [{ required: true, message: '请输入医院代码', trigger: 'blur' }],
-  level: [{ required: true, message: '请选择医院等级', trigger: 'change' }],
-  address: [{ required: true, message: '请输入医院地址', trigger: 'blur' }],
-  contactPerson: [{ required: true, message: '请输入联系人', trigger: 'blur' }],
-  contactPhone: [
-    { required: true, message: '请输入联系电话', trigger: 'blur' },
-    { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号码', trigger: 'blur' },
-  ],
 };
 
 const fetchData = async () => {
@@ -163,7 +140,7 @@ const fetchData = async () => {
       page: pagination.page,
       pageSize: pagination.pageSize,
     });
-    tableData.value = res.items || [];
+    tableData.value = res.list || [];
     pagination.total = res.total || 0;
   } catch (error: any) {
     ElMessage.error(error.message || '获取数据失败');
@@ -248,10 +225,9 @@ const handleSubmit = async () => {
 const resetForm = () => {
   formData.id = null;
   formData.name = '';
-  formData.code = '';
-  formData.level = '';
+  formData.province = '';
+  formData.city = '';
   formData.address = '';
-  formData.contactPerson = '';
   formData.contactPhone = '';
   formData.status = 'active';
   formRef.value?.clearValidate();

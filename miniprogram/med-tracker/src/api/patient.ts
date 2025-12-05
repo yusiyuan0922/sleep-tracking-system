@@ -4,6 +4,11 @@ import { get, post, put, del } from '../utils/request';
  * 患者API
  */
 export const patientAPI = {
+  // 获取患者列表
+  getList(params?: any) {
+    return get('/patients', params);
+  },
+
   // 获取当前患者信息
   getMyInfo() {
     return get('/patients/me');
@@ -26,6 +31,10 @@ export const patientAPI = {
 
   // 获取患者阶段完成状态
   getStageCompletionStatus(id: number) {
+    if (!id) {
+      console.warn('getStageCompletionStatus: 患者ID为空，跳过请求');
+      return Promise.resolve({});
+    }
     return get(`/patients/${id}/stage-completion-status`);
   },
 

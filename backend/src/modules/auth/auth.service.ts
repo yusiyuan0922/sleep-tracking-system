@@ -142,11 +142,26 @@ export class AuthService {
    * 开发环境模拟微信登录
    */
   private async mockWxLogin(code: string, phone?: string) {
-    // 使用模拟的openid
-    const mockOpenId = `mock_openid_${code}`;
+    // 开发模式：使用固定的openid，避免每次登录都创建新用户
+    // 如果需要测试新用户，可以手动修改这个值
+    const mockOpenId = `mock_openid_fixed_patient`;
 
-    // 查找用户
-    let user = await this.userRepository.findOne({ where: { openid: mockOpenId } });
+    console.log(`[开发模式] 使用固定的 mockOpenId: ${mockOpenId}`);
+
+    let user = null;
+
+    // 开发模式下，如果提供了手机号，直接通过手机号查找用户（方便调试，不需要每次重新绑定）
+    if (phone) {
+      user = await this.userRepository.findOne({ where: { phone } });
+      if (user) {
+        console.log(`[开发模式] 通过手机号找到用户: userId=${user.id}, role=${user.role}, phone=${phone}`);
+      }
+    }
+
+    // 如果没有通过手机号找到，尝试通过openid查找
+    if (!user) {
+      user = await this.userRepository.findOne({ where: { openid: mockOpenId } });
+    }
 
     // 如果没找到且提供了手机号,尝试绑定管理员创建的账号
     if (!user && phone) {

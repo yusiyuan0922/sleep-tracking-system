@@ -4,8 +4,8 @@
     <view class="patient-info-card">
       <text class="info-title">患者信息</text>
       <view class="info-content">
-        <text class="info-text">姓名: {{ patientInfo.name }}</text>
-        <text class="info-text">编号: {{ patientInfo.patientCode }}</text>
+        <text class="info-text">姓名: {{ patientInfo.user?.name || '患者' }}</text>
+        <text class="info-text">编号: {{ patientInfo.patientNo }}</text>
         <text class="info-text">阶段: {{ stage }}</text>
       </view>
     </view>

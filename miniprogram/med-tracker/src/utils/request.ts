@@ -16,6 +16,33 @@ interface Response<T = any> {
 }
 
 /**
+ * 格式化错误消息
+ * 确保返回字符串(处理数组情况)
+ */
+function formatErrorMessage(message: any, defaultMsg: string = '操作失败'): string {
+  if (!message) {
+    return defaultMsg;
+  }
+
+  // 如果是数组,取第一个元素或合并所有消息
+  if (Array.isArray(message)) {
+    if (message.length === 0) {
+      return defaultMsg;
+    }
+    // 如果数组中有多条消息,取第一条(避免消息过长)
+    return String(message[0]);
+  }
+
+  // 如果是对象,尝试提取 message 字段
+  if (typeof message === 'object') {
+    return formatErrorMessage(message.message, defaultMsg);
+  }
+
+  // 转换为字符串
+  return String(message);
+}
+
+/**
  * 封装的请求方法
  */
 export function request<T = any>(options: RequestOptions): Promise<T> {
@@ -63,7 +90,7 @@ export function request<T = any>(options: RequestOptions): Promise<T> {
           reject(new Error('Unauthorized'));
         } else {
           // 其他错误
-          const errorMsg = (res.data as any)?.message || '请求失败';
+          const errorMsg = formatErrorMessage((res.data as any)?.message, '请求失败');
           uni.showToast({
             title: errorMsg,
             icon: 'none',
@@ -140,6 +167,8 @@ export function patch<T = any>(url: string, data?: any): Promise<T> {
   });
 }
 
+export { formatErrorMessage };
+
 export default {
   request,
   get,
@@ -147,4 +176,5 @@ export default {
   put,
   delete: del,
   patch,
+  formatErrorMessage,
 };

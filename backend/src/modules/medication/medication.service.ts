@@ -59,14 +59,31 @@ export class MedicationService {
     }
 
     queryBuilder
-      .orderBy('medication.startDate', 'DESC')
+      .orderBy('medication.createdAt', 'DESC')
       .skip((page - 1) * pageSize)
       .take(pageSize);
 
     const [records, total] = await queryBuilder.getManyAndCount();
 
+    // 格式化返回数据，将字段名映射为前端期望的格式
+    const list = records.map(record => ({
+      id: record.id,
+      medicationName: record.drugName,
+      stage: record.stage,
+      dosage: record.dosage,
+      unit: record.unit,
+      frequency: record.frequency,
+      route: record.route,
+      startDate: record.startDate,
+      endDate: record.endDate,
+      duration: record.duration,
+      indication: record.indication,
+      remark: record.remark,
+      createdAt: record.createdAt,
+    }));
+
     return {
-      data: records,
+      list,
       total,
       page,
       pageSize,
@@ -99,7 +116,7 @@ export class MedicationService {
   ): Promise<MedicationRecord[]> {
     return await this.medicationRecordRepository.find({
       where: { patientId, stage: stage as any },
-      order: { startDate: 'DESC' },
+      order: { createdAt: 'DESC' },
     });
   }
 

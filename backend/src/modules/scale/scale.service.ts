@@ -114,6 +114,9 @@ export class ScaleService {
     if (updateScaleConfigDto.status !== undefined) {
       config.status = updateScaleConfigDto.status as any;
     }
+    if (updateScaleConfigDto.stages !== undefined) {
+      config.stages = updateScaleConfigDto.stages;
+    }
 
     return await this.scaleConfigRepository.save(config);
   }
@@ -190,7 +193,7 @@ export class ScaleService {
    * 查询量表记录列表
    */
   async findAllRecords(query: QueryScaleRecordDto) {
-    const { patientId, scaleId, stage, page = 1, pageSize = 10 } = query;
+    const { patientId, scaleId, scaleCode, stage, page = 1, pageSize = 10 } = query;
 
     const queryBuilder = this.scaleRecordRepository
       .createQueryBuilder('record')
@@ -203,9 +206,11 @@ export class ScaleService {
       queryBuilder.andWhere('record.patientId = :patientId', { patientId });
     }
 
-    // 按量表筛选
+    // 按量表筛选(支持scaleId或scaleCode)
     if (scaleId) {
       queryBuilder.andWhere('record.scaleId = :scaleId', { scaleId });
+    } else if (scaleCode) {
+      queryBuilder.andWhere('scale.code = :scaleCode', { scaleCode });
     }
 
     // 按阶段筛选
@@ -219,7 +224,15 @@ export class ScaleService {
       .skip((page - 1) * pageSize)
       .take(pageSize);
 
-    const [list, total] = await queryBuilder.getManyAndCount();
+    const [records, total] = await queryBuilder.getManyAndCount();
+
+    // 格式化返回数据,扁平化scale字段便于前端使用
+    const list = records.map(record => ({
+      ...record,
+      scaleCode: record.scale?.code,
+      scaleName: record.scale?.name,
+      createdAt: record.completedAt, // 前端期望的字段名
+    }));
 
     return {
       list,

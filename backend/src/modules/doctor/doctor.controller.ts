@@ -4,6 +4,7 @@ import {
   Post,
   Body,
   Patch,
+  Put,
   Param,
   Delete,
   Query,
@@ -12,10 +13,12 @@ import {
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { DoctorService } from './doctor.service';
 import {
+  CreateDoctorDto,
   RegisterDoctorDto,
   UpdateDoctorDto,
   AuditDoctorDto,
   QueryDoctorDto,
+  QueryMyPatientsDto,
 } from './dto/doctor.dto';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -25,6 +28,13 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 @Controller('doctors')
 export class DoctorController {
   constructor(private readonly doctorService: DoctorService) {}
+
+  @Post()
+  @Roles('super_admin', 'admin')
+  @ApiOperation({ summary: '创建医生(管理员创建,会同时创建User和Doctor记录)' })
+  async create(@Body() createDoctorDto: CreateDoctorDto) {
+    return this.doctorService.create(createDoctorDto);
+  }
 
   @Post('register')
   @Roles('doctor')
@@ -40,7 +50,7 @@ export class DoctorController {
     return this.doctorService.findAll(query);
   }
 
-  @Get('my-info')
+  @Get('me')
   @Roles('doctor')
   @ApiOperation({ summary: '获取当前登录医生的信息' })
   async getMyInfo(@CurrentUser() user: any) {
@@ -51,6 +61,16 @@ export class DoctorController {
     return doctor;
   }
 
+  @Get('my-patients')
+  @Roles('doctor', 'super_admin')
+  @ApiOperation({ summary: '获取我的患者列表' })
+  async getMyPatients(
+    @CurrentUser() user: any,
+    @Query() query: QueryMyPatientsDto,
+  ) {
+    return this.doctorService.getMyPatients(user.userId, query);
+  }
+
   @Get(':id')
   @Roles('super_admin', 'admin', 'doctor')
   @ApiOperation({ summary: '获取医生详情(by ID)' })
@@ -58,10 +78,20 @@ export class DoctorController {
     return this.doctorService.findOne(id);
   }
 
-  @Patch(':id')
-  @Roles('doctor', 'admin')
+  @Put(':id')
+  @Roles('super_admin', 'doctor', 'admin')
   @ApiOperation({ summary: '更新医生信息' })
   async update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateDoctorDto: UpdateDoctorDto,
+  ) {
+    return this.doctorService.update(id, updateDoctorDto);
+  }
+
+  @Patch(':id')
+  @Roles('super_admin', 'doctor', 'admin')
+  @ApiOperation({ summary: '更新医生信息(PATCH)' })
+  async partialUpdate(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateDoctorDto: UpdateDoctorDto,
   ) {

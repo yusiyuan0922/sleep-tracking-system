@@ -93,7 +93,7 @@ export class MedicationController {
   }
 
   @Get('concomitant')
-  @Roles('super_admin', 'admin', 'doctor')
+  @Roles('super_admin', 'admin', 'doctor', 'patient')
   @ApiOperation({ summary: '查询合并用药记录列表（支持分页和筛选）' })
   async findAllConcomitantMedications(
     @Query() query: QueryConcomitantMedicationDto,

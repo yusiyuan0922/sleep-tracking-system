@@ -24,7 +24,7 @@ export class MedicationRecord {
   @Column({
     type: 'varchar',
     length: 10,
-    nullable: false,
+    nullable: true,
     comment: '阶段:V1/V2/V3/V4',
   })
   stage: 'V1' | 'V2' | 'V3' | 'V4';
@@ -32,22 +32,22 @@ export class MedicationRecord {
   @Column({ type: 'varchar', length: 100, nullable: false, name: 'drug_name', comment: '药品名称' })
   drugName: string;
 
-  @Column({ type: 'varchar', length: 50, nullable: false, comment: '规格:如10mg/片' })
+  @Column({ type: 'varchar', length: 50, nullable: true, comment: '规格:如10mg/片' })
   specification: string;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: false, comment: '每次剂量' })
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: false, comment: '每次剂量(mg)' })
   dosage: number;
 
-  @Column({ type: 'varchar', length: 20, nullable: false, comment: '剂量单位:mg/片/粒等' })
+  @Column({ type: 'varchar', length: 20, nullable: true, comment: '剂量单位:mg/片/粒等' })
   unit: string;
 
-  @Column({ type: 'varchar', length: 50, nullable: false, comment: '用药频率:每日1次/每日2次等' })
+  @Column({ type: 'varchar', length: 50, nullable: true, comment: '用药频率:每日1次/每日2次等' })
   frequency: string;
 
-  @Column({ type: 'varchar', length: 50, nullable: false, comment: '用药途径:口服/注射等' })
+  @Column({ type: 'varchar', length: 50, nullable: true, comment: '用药途径:口服/注射等' })
   route: string;
 
-  @Column({ type: 'date', nullable: false, name: 'start_date', comment: '开始日期' })
+  @Column({ type: 'date', nullable: true, name: 'start_date', comment: '开始日期' })
   startDate: Date;
 
   @Column({ type: 'date', nullable: true, name: 'end_date', comment: '结束日期' })
@@ -59,6 +59,9 @@ export class MedicationRecord {
     comment: '用药天数(由trigger自动计算)',
   })
   duration: number;
+
+  @Column({ type: 'text', nullable: true, comment: '使用原因/适应症' })
+  indication: string;
 
   @Column({ type: 'text', nullable: true, comment: '备注' })
   remark: string;

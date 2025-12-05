@@ -7,6 +7,43 @@ import {
   Length,
   IsNotEmpty,
 } from 'class-validator';
+import { Type } from 'class-transformer';
+
+// 管理员创建医生DTO
+export class CreateDoctorDto {
+  @ApiProperty({ description: '医生姓名' })
+  @IsString()
+  @Length(2, 50)
+  name: string;
+
+  @ApiProperty({ description: '手机号' })
+  @IsString()
+  @Length(11, 11)
+  phone: string;
+
+  @ApiProperty({ description: '医院ID' })
+  @IsInt()
+  @Type(() => Number)
+  hospitalId: number;
+
+  @ApiPropertyOptional({ description: '工号' })
+  @IsString()
+  @IsOptional()
+  @Length(0, 50)
+  employeeNo?: string;
+
+  @ApiPropertyOptional({ description: '科室' })
+  @IsString()
+  @IsOptional()
+  @Length(0, 100)
+  department?: string;
+
+  @ApiPropertyOptional({ description: '职称' })
+  @IsString()
+  @IsOptional()
+  @Length(0, 50)
+  title?: string;
+}
 
 // 医生注册DTO
 export class RegisterDoctorDto {
@@ -21,19 +58,19 @@ export class RegisterDoctorDto {
   @ApiPropertyOptional({ description: '工号' })
   @IsString()
   @IsOptional()
-  @Length(1, 50)
+  @Length(0, 50)
   employeeNo?: string;
 
   @ApiPropertyOptional({ description: '科室' })
   @IsString()
   @IsOptional()
-  @Length(1, 100)
+  @Length(0, 100)
   department?: string;
 
   @ApiPropertyOptional({ description: '职称' })
   @IsString()
   @IsOptional()
-  @Length(1, 50)
+  @Length(0, 50)
   title?: string;
 
   @ApiPropertyOptional({ description: '资质证明文件URL' })
@@ -43,7 +80,19 @@ export class RegisterDoctorDto {
 }
 
 // 更新医生信息DTO
-export class UpdateDoctorDto extends PartialType(RegisterDoctorDto) {}
+export class UpdateDoctorDto extends PartialType(RegisterDoctorDto) {
+  @ApiPropertyOptional({ description: '医生姓名' })
+  @IsString()
+  @IsOptional()
+  @Length(2, 50)
+  name?: string;
+
+  @ApiPropertyOptional({ description: '手机号' })
+  @IsString()
+  @IsOptional()
+  @Length(11, 11)
+  phone?: string;
+}
 
 // 医生审核DTO
 export class AuditDoctorDto {
@@ -66,6 +115,7 @@ export class QueryDoctorDto {
   @ApiPropertyOptional({ description: '医院ID' })
   @IsOptional()
   @IsInt()
+  @Type(() => Number)
   hospitalId?: number;
 
   @ApiPropertyOptional({ description: '审核状态' })
@@ -80,9 +130,26 @@ export class QueryDoctorDto {
 
   @ApiPropertyOptional({ description: '页码', default: 1 })
   @IsOptional()
+  @IsInt()
+  @Type(() => Number)
   page?: number;
 
   @ApiPropertyOptional({ description: '每页数量', default: 10 })
   @IsOptional()
+  @IsInt()
+  @Type(() => Number)
   pageSize?: number;
+}
+
+// 查询我的患者列表DTO(医生端)
+export class QueryMyPatientsDto {
+  @ApiPropertyOptional({ description: '当前阶段筛选' })
+  @IsOptional()
+  @IsEnum(['V1', 'V2', 'V3', 'V4', 'completed'])
+  currentStage?: string;
+
+  @ApiPropertyOptional({ description: '搜索关键词(患者姓名或编号)' })
+  @IsString()
+  @IsOptional()
+  name?: string;
 }

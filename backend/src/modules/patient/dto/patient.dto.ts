@@ -6,24 +6,62 @@ import {
   IsEnum,
   IsNotEmpty,
   IsDateString,
+  Length,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 
 // 患者注册DTO
 export class RegisterPatientDto {
-  @ApiProperty({ description: '用户ID' })
-  @IsInt()
+  @ApiProperty({ description: '患者姓名' })
+  @IsString()
   @IsNotEmpty()
-  userId: number;
+  @Length(2, 50)
+  name: string;
+
+  @ApiProperty({ description: '性别', enum: ['male', 'female'] })
+  @IsEnum(['male', 'female'])
+  @IsNotEmpty()
+  gender: 'male' | 'female';
+
+  @ApiProperty({ description: '出生日期', example: '1990-01-01' })
+  @IsDateString()
+  @IsNotEmpty()
+  birthDate: string;
+
+  @ApiProperty({ description: '联系电话' })
+  @IsString()
+  @IsNotEmpty()
+  @Length(11, 11)
+  phone: string;
+
+  @ApiPropertyOptional({ description: '紧急联系人' })
+  @IsString()
+  @IsOptional()
+  @Length(0, 50)
+  emergencyContact?: string;
+
+  @ApiPropertyOptional({ description: '紧急联系电话' })
+  @IsString()
+  @IsOptional()
+  @Length(0, 11)
+  emergencyPhone?: string;
 
   @ApiProperty({ description: '主治医生ID' })
   @IsInt()
   @IsNotEmpty()
+  @Type(() => Number)
   doctorId: number;
 
   @ApiProperty({ description: '医院ID' })
   @IsInt()
   @IsNotEmpty()
+  @Type(() => Number)
   hospitalId: number;
+
+  @ApiPropertyOptional({ description: '诊断信息' })
+  @IsString()
+  @IsOptional()
+  diagnosis?: string;
 }
 
 // 查询患者列表DTO

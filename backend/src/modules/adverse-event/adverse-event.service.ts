@@ -27,8 +27,30 @@ export class AdverseEventService {
   async createAdverseEvent(
     createAdverseEventDto: CreateAdverseEventDto,
   ): Promise<AdverseEvent> {
-    const event = this.adverseEventRepository.create(createAdverseEventDto);
+    // 生成AE序号: AE-{patientId}-{序号}
+    const aeNumber = await this.generateAeNumber(createAdverseEventDto.patientId);
+
+    const event = this.adverseEventRepository.create({
+      ...createAdverseEventDto,
+      aeNumber,
+    });
     return await this.adverseEventRepository.save(event);
+  }
+
+  /**
+   * 生成AE序号
+   * 格式: AE-{patientId}-{序号}
+   */
+  private async generateAeNumber(patientId: number): Promise<string> {
+    // 查询该患者的不良事件数量
+    const count = await this.adverseEventRepository.count({
+      where: { patientId },
+    });
+
+    // 序号从1开始，补零到3位
+    const sequence = String(count + 1).padStart(3, '0');
+
+    return `AE-${patientId}-${sequence}`;
   }
 
   /**
@@ -65,8 +87,28 @@ export class AdverseEventService {
 
     const [events, total] = await queryBuilder.getManyAndCount();
 
+    // 格式化返回数据，将字段名映射为前端期望的格式
+    const items = events.map(event => ({
+      id: event.id,
+      aeNumber: event.aeNumber,
+      eventName: event.eventName,
+      severity: event.severity,
+      isSerious: event.isSerious,
+      stage: event.stage,
+      occurredAt: event.onsetDate,
+      isOngoing: event.isOngoing,
+      endDate: event.endDate,
+      description: event.description,
+      relatedDrug: event.relatedDrug,
+      relationship: event.causality, // 映射 causality 为 relationship
+      action: event.action,
+      outcome: event.outcome,
+      remark: event.remark,
+      createdAt: event.createdAt,
+    }));
+
     return {
-      data: events,
+      items,
       total,
       page,
       pageSize,
