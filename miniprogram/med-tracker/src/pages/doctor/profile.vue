@@ -1,5 +1,8 @@
 <template>
   <view class="doctor-profile-container">
+    <!-- 顶部导航栏 -->
+    <DoctorNav current="profile" />
+
     <!-- 医生信息卡片 -->
     <view class="profile-header">
       <view class="avatar-section">
@@ -53,23 +56,6 @@
       </view>
     </view>
 
-    <!-- 功能菜单 -->
-    <view class="menu-list">
-      <view class="menu-item" @click="goToPage('/pages/doctor/index')">
-        <text class="menu-icon">👥</text>
-        <text class="menu-text">我的患者</text>
-        <text class="menu-arrow">›</text>
-      </view>
-      <view class="menu-item" @click="goToPage('/pages/doctor/pending-review')">
-        <text class="menu-icon">📋</text>
-        <text class="menu-text">待审核列表</text>
-        <view class="menu-badge" v-if="stats.pendingReview > 0">
-          <text>{{ stats.pendingReview }}</text>
-        </view>
-        <text class="menu-arrow">›</text>
-      </view>
-    </view>
-
     <!-- 退出登录 -->
     <view class="logout-section">
       <button class="logout-btn" @click="handleLogout">退出登录</button>
@@ -78,10 +64,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref } from 'vue';
+import { onShow } from '@dcloudio/uni-app';
 import { doctorAPI } from '../../api/doctor';
-import { patientAPI } from '../../api/patient';
 import { config } from '../../config';
+import DoctorNav from '../../components/doctor-nav/index.vue';
 
 const doctorInfo = ref<any>({});
 const stats = ref({
@@ -106,9 +93,9 @@ const loadDoctorInfo = async () => {
 // 加载统计数据
 const loadStats = async () => {
   try {
-    // 获取患者列表
-    const patients = await patientAPI.getList({});
-    const patientList = patients.items || patients || [];
+    // 获取我的患者列表
+    const result = await doctorAPI.getMyPatients();
+    const patientList = result.items || result || [];
 
     stats.value.totalPatients = patientList.length;
     stats.value.pendingReview = patientList.filter((p: any) => p.pendingReview).length;
@@ -124,15 +111,6 @@ const loadStats = async () => {
     }).length;
   } catch (error: any) {
     console.error('加载统计数据失败:', error);
-  }
-};
-
-// 跳转到页面
-const goToPage = (url: string) => {
-  if (url.includes('index')) {
-    uni.switchTab({ url });
-  } else {
-    uni.navigateTo({ url });
   }
 };
 
@@ -156,13 +134,9 @@ const handleLogout = () => {
   });
 };
 
-onMounted(() => {
-  loadDoctorInfo();
-  loadStats();
-});
-
 // 监听页面显示
 onShow(() => {
+  loadDoctorInfo();
   loadStats();
 });
 </script>
@@ -172,12 +146,13 @@ onShow(() => {
   min-height: 100vh;
   background-color: #f5f5f5;
   padding-bottom: 30rpx;
+  padding-top: calc(var(--status-bar-height, 44px) + 100rpx);
 }
 
 /* 顶部信息 */
 .profile-header {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 60rpx 30rpx 40rpx;
+  padding: 40rpx 30rpx;
   display: flex;
   align-items: center;
   gap: 30rpx;
@@ -281,50 +256,6 @@ onShow(() => {
   font-size: 26rpx;
   color: #333333;
   text-align: right;
-}
-
-/* 功能菜单 */
-.menu-list {
-  margin: 0 30rpx 30rpx;
-  background-color: #ffffff;
-  border-radius: 20rpx;
-  overflow: hidden;
-}
-
-.menu-item {
-  display: flex;
-  align-items: center;
-  padding: 30rpx;
-  gap: 20rpx;
-  border-bottom: 1rpx solid #f0f0f0;
-}
-
-.menu-item:last-child {
-  border-bottom: none;
-}
-
-.menu-icon {
-  font-size: 40rpx;
-}
-
-.menu-text {
-  flex: 1;
-  font-size: 28rpx;
-  color: #333333;
-}
-
-.menu-badge {
-  padding: 4rpx 12rpx;
-  background-color: #ff4d4f;
-  color: #ffffff;
-  border-radius: 20rpx;
-  font-size: 20rpx;
-  font-weight: bold;
-}
-
-.menu-arrow {
-  font-size: 36rpx;
-  color: #d9d9d9;
 }
 
 /* 退出登录 */

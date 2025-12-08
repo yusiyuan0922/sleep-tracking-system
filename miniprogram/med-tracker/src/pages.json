@@ -25,30 +25,6 @@
       }
     },
     {
-      "path": "pages/stage/v1",
-      "style": {
-        "navigationBarTitleText": "V1阶段"
-      }
-    },
-    {
-      "path": "pages/stage/v2",
-      "style": {
-        "navigationBarTitleText": "V2阶段"
-      }
-    },
-    {
-      "path": "pages/stage/v3",
-      "style": {
-        "navigationBarTitleText": "V3阶段"
-      }
-    },
-    {
-      "path": "pages/stage/v4",
-      "style": {
-        "navigationBarTitleText": "V4阶段"
-      }
-    },
-    {
       "path": "pages/scale/list",
       "style": {
         "navigationBarTitleText": "量表列表"
@@ -64,6 +40,12 @@
       "path": "pages/scale/history",
       "style": {
         "navigationBarTitleText": "历史记录"
+      }
+    },
+    {
+      "path": "pages/scale/detail",
+      "style": {
+        "navigationBarTitleText": "量表详情"
       }
     },
     {
@@ -88,6 +70,12 @@
       "path": "pages/adverse-event/list",
       "style": {
         "navigationBarTitleText": "不良事件"
+      }
+    },
+    {
+      "path": "pages/adverse-event/detail",
+      "style": {
+        "navigationBarTitleText": "不良事件详情"
       }
     },
     {
@@ -136,6 +124,18 @@
       "path": "pages/doctor/pending-review",
       "style": {
         "navigationBarTitleText": "待审核列表"
+      }
+    },
+    {
+      "path": "pages/doctor/profile",
+      "style": {
+        "navigationBarTitleText": "个人中心"
+      }
+    },
+    {
+      "path": "pages/doctor/login",
+      "style": {
+        "navigationBarTitleText": "医生登录"
       }
     }
   ],

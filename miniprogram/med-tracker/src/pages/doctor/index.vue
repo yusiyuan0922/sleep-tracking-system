@@ -94,7 +94,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed } from 'vue';
 import { onShow } from '@dcloudio/uni-app';
 import { doctorAPI } from '../../api/doctor';
 import DoctorNav from '../../components/doctor-nav/index.vue';
@@ -135,6 +135,15 @@ const filteredPatients = computed(() => {
       p.patientCode?.toLowerCase().includes(keyword)
     );
   }
+
+  // 排序：待审核的患者排在最前面
+  result.sort((a, b) => {
+    // 待审核的患者优先级更高
+    if (a.pendingReview && !b.pendingReview) return -1;
+    if (!a.pendingReview && b.pendingReview) return 1;
+    // 其他情况保持原有顺序（或可以按其他字段排序）
+    return 0;
+  });
 
   return result;
 });
@@ -180,12 +189,12 @@ const goToPatientDetail = (patientId: number) => {
   });
 };
 
-onMounted(() => {
-  loadPatients();
-});
-
 // 监听页面显示(从详情返回时刷新)
 onShow(() => {
+  // 重置筛选和搜索条件，确保显示最新的完整列表
+  searchKeyword.value = '';
+  currentStageFilter.value = 'all';
+  // 刷新患者列表
   loadPatients();
 });
 </script>

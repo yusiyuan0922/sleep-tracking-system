@@ -64,7 +64,7 @@ const goTo = (page: string) => {
   const routes: Record<string, string> = {
     patients: '/pages/doctor/index',
     review: '/pages/doctor/pending-review',
-    profile: '/pages/profile/index',
+    profile: '/pages/doctor/profile',
   };
 
   uni.reLaunch({ url: routes[page] });
