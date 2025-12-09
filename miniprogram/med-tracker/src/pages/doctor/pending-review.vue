@@ -38,7 +38,7 @@
         </view>
 
         <view class="card-footer">
-          <text class="footer-text">点击进入审核</text>
+          <text class="footer-text">点击查看详情并审核</text>
           <text class="footer-arrow">›</text>
         </view>
       </view>
@@ -97,10 +97,10 @@ const loadPatients = async () => {
   }
 };
 
-// 进入审核
+// 进入患者详情（直接在详情页审核）
 const goToReview = (patient: any) => {
   uni.navigateTo({
-    url: `/pages/doctor/review?patientId=${patient.id}&stage=${patient.currentStage}`,
+    url: `/pages/doctor/patient-detail?id=${patient.id}`,
   });
 };
 

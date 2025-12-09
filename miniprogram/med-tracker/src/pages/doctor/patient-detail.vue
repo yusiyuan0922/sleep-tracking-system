@@ -150,6 +150,66 @@
       </view>
     </view>
 
+    <!-- 审核区域（待审核时显示） -->
+    <view v-if="canReview" class="review-section">
+      <view class="review-header">
+        <text class="review-title">📋 {{ patientInfo.currentStage }}阶段审核</text>
+        <view class="pending-badge">待审核</view>
+      </view>
+
+      <!-- 完成情况检查 -->
+      <view class="completion-check">
+        <text class="check-title">完成情况</text>
+        <view class="requirement-list">
+          <view
+            v-for="req in requirements"
+            :key="req.type + (req.code || '')"
+            class="requirement-item"
+            :class="{ completed: req.completed }"
+          >
+            <view class="req-icon">
+              <text v-if="req.completed">✓</text>
+              <text v-else>✗</text>
+            </view>
+            <text class="req-text">{{ req.name }}</text>
+          </view>
+        </view>
+
+        <view v-if="!canApprove" class="warning-box">
+          <text class="warning-icon">⚠️</text>
+          <view class="warning-content">
+            <text class="warning-text">该患者尚未完成所有必填项</text>
+            <view v-if="incompleteItems.length > 0" class="incomplete-list">
+              <text v-for="item in incompleteItems" :key="item" class="incomplete-item">• {{ item }}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 审核意见 -->
+      <view class="review-input">
+        <text class="input-label">审核意见</text>
+        <textarea
+          class="review-textarea"
+          v-model="reviewNotes"
+          placeholder="请输入审核意见(驳回时必填)"
+          placeholder-class="placeholder"
+          maxlength="500"
+        />
+        <text class="char-count">{{ reviewNotes.length }}/500</text>
+      </view>
+
+      <!-- 审核按钮 -->
+      <view class="review-actions">
+        <button class="review-btn reject" @click="handleReject" :loading="submitting">
+          驳回
+        </button>
+        <button class="review-btn approve" @click="handleApprove" :disabled="!canApprove" :loading="submitting">
+          通过
+        </button>
+      </view>
+    </view>
+
     <!-- 操作按钮区 -->
     <view class="action-section">
       <button class="action-btn primary" @click="goToFillScale">
@@ -157,9 +217,6 @@
       </button>
       <button class="action-btn secondary" @click="goToUploadFile">
         上传病历文件
-      </button>
-      <button v-if="canReview" class="action-btn success" @click="handleReview">
-        审核{{ patientInfo.currentStage }}阶段
       </button>
     </view>
   </view>
@@ -180,6 +237,11 @@ const scaleRecords = ref<any[]>([]);
 const medications = ref<any[]>([]);
 const adverseEvents = ref<any[]>([]);
 const completedDoctorScales = ref<string[]>([]); // 当前阶段已完成的医生量表
+
+// 审核相关
+const completionStatus = ref<any>({});
+const reviewNotes = ref('');
+const submitting = ref(false);
 
 const tabs = [
   { value: 'info', label: '基本信息' },
@@ -220,9 +282,61 @@ const stageProgress = computed(() => {
   });
 });
 
-// 是否可以审核
+// 是否显示审核区域（只要加载了completionStatus数据，就显示审核区域）
 const canReview = computed(() => {
-  return patientInfo.value.pendingReview === true;
+  // 只要有completionStatus数据（即当前阶段未完成），就显示审核区域
+  // 这样医生可以看到患者的完成进度
+  return completionStatus.value.currentStage !== undefined &&
+         patientInfo.value.currentStage !== 'completed';
+});
+
+// 必填项列表
+const requirements = computed(() => {
+  const reqs = completionStatus.value.requirements || {};
+  const completed = completionStatus.value.completedRequirements || [];
+
+  const list: any[] = [];
+
+  // 量表
+  if (reqs.requiredScales) {
+    reqs.requiredScales.forEach((code: string) => {
+      const isCompleted = completed.some((r: any) => r.type === 'scale' && r.code === code);
+      list.push({
+        type: 'scale',
+        code,
+        name: `${code}量表`,
+        completed: isCompleted,
+      });
+    });
+  }
+
+  // 用药记录
+  if (reqs.requiresMedicationRecord) {
+    const isCompleted = completed.some((r: any) => r.type === 'medicationRecord');
+    list.push({
+      type: 'medicationRecord',
+      name: '用药记录',
+      completed: isCompleted,
+    });
+  }
+
+  return list;
+});
+
+// 是否可以通过审核
+const canApprove = computed(() => {
+  return completionStatus.value.canComplete === true;
+});
+
+// 未完成项目列表
+const incompleteItems = computed(() => {
+  const backendMissing = completionStatus.value.missingRequirements || [];
+  if (backendMissing.length > 0) {
+    return backendMissing.map((r: any) => r.name || r.message || `${r.code}量表`);
+  }
+  return requirements.value
+    .filter((req) => !req.completed)
+    .map((req) => req.name);
 });
 
 // 加载患者信息
@@ -232,11 +346,25 @@ const loadPatientInfo = async () => {
     patientInfo.value = result;
     // 加载已完成的医生量表
     await loadCompletedDoctorScales();
+    // 对于非completed状态的患者，加载完成状态来判断是否可以审核
+    if (result.currentStage !== 'completed') {
+      await loadCompletionStatus();
+    }
   } catch (error: any) {
     uni.showToast({
       title: '加载失败',
       icon: 'none',
     });
+  }
+};
+
+// 加载完成状态
+const loadCompletionStatus = async () => {
+  try {
+    const result = await patientAPI.getStageCompletionStatus(patientId.value);
+    completionStatus.value = result;
+  } catch (error: any) {
+    console.error('加载完成状态失败:', error);
   }
 };
 
@@ -353,11 +481,75 @@ const goToUploadFile = () => {
   });
 };
 
-// 审核
-const handleReview = () => {
-  uni.navigateTo({
-    url: `/pages/doctor/review?patientId=${patientId.value}&stage=${patientInfo.value.currentStage}`,
+// 通过审核
+const handleApprove = () => {
+  uni.showModal({
+    title: '确认通过',
+    content: `确认通过${patientInfo.value.currentStage}阶段的审核吗?`,
+    success: async (res) => {
+      if (res.confirm) {
+        await submitReview('approved');
+      }
+    },
   });
+};
+
+// 驳回审核
+const handleReject = () => {
+  if (!reviewNotes.value) {
+    uni.showToast({
+      title: '驳回时必须填写审核意见',
+      icon: 'none',
+    });
+    return;
+  }
+
+  uni.showModal({
+    title: '确认驳回',
+    content: `确认驳回${patientInfo.value.currentStage}阶段吗?`,
+    confirmText: '确认驳回',
+    confirmColor: '#ff4d4f',
+    success: async (res) => {
+      if (res.confirm) {
+        await submitReview('rejected');
+      }
+    },
+  });
+};
+
+// 提交审核
+const submitReview = async (decision: 'approved' | 'rejected') => {
+  try {
+    submitting.value = true;
+    const stage = patientInfo.value.currentStage;
+
+    // 调用完成阶段API
+    const methodName = `complete${stage}` as keyof typeof patientAPI;
+    await (patientAPI[methodName] as Function)(patientId.value, {
+      reviewDecision: decision,
+      reviewNotes: reviewNotes.value,
+    });
+
+    uni.showToast({
+      title: decision === 'approved' ? '审核通过' : '已驳回',
+      icon: 'success',
+      duration: 1500,
+    });
+
+    // 刷新页面数据
+    setTimeout(() => {
+      reviewNotes.value = '';
+      completionStatus.value = {};
+      loadPatientInfo();
+    }, 1500);
+  } catch (error: any) {
+    uni.showToast({
+      title: error.message || '提交失败',
+      icon: 'none',
+    });
+  } finally {
+    submitting.value = false;
+  }
 };
 
 onLoad((options: any) => {
@@ -717,5 +909,195 @@ onShow(() => {
 .action-btn.success {
   background-color: #52c41a;
   color: #ffffff;
+}
+
+/* 审核区域样式 */
+.review-section {
+  margin: 30rpx;
+  background-color: #ffffff;
+  border-radius: 20rpx;
+  padding: 30rpx;
+  border: 2rpx solid #fa8c16;
+}
+
+.review-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30rpx;
+  padding-bottom: 20rpx;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+
+.review-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333333;
+}
+
+.pending-badge {
+  padding: 8rpx 20rpx;
+  background-color: #fff7e6;
+  color: #fa8c16;
+  border-radius: 20rpx;
+  font-size: 24rpx;
+  font-weight: 500;
+}
+
+.completion-check {
+  margin-bottom: 30rpx;
+}
+
+.check-title {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #333333;
+  display: block;
+  margin-bottom: 20rpx;
+}
+
+.requirement-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15rpx;
+  margin-bottom: 20rpx;
+}
+
+.requirement-item {
+  display: flex;
+  align-items: center;
+  gap: 15rpx;
+  padding: 15rpx 20rpx;
+  background-color: #f7f8fa;
+  border-radius: 10rpx;
+}
+
+.requirement-item.completed {
+  background-color: #e6fffb;
+}
+
+.req-icon {
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24rpx;
+  font-weight: bold;
+  background-color: #ff4d4f;
+  color: #ffffff;
+}
+
+.requirement-item.completed .req-icon {
+  background-color: #52c41a;
+}
+
+.req-text {
+  flex: 1;
+  font-size: 26rpx;
+  color: #333333;
+}
+
+.warning-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 15rpx;
+  padding: 20rpx;
+  background-color: #fff7e6;
+  border-radius: 10rpx;
+  border-left: 6rpx solid #fa8c16;
+}
+
+.warning-icon {
+  font-size: 32rpx;
+}
+
+.warning-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10rpx;
+}
+
+.warning-text {
+  font-size: 24rpx;
+  color: #fa8c16;
+  line-height: 1.5;
+}
+
+.incomplete-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+}
+
+.incomplete-item {
+  font-size: 22rpx;
+  color: #d46b08;
+  padding-left: 10rpx;
+}
+
+.review-input {
+  margin-bottom: 30rpx;
+}
+
+.input-label {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #333333;
+  display: block;
+  margin-bottom: 15rpx;
+}
+
+.review-textarea {
+  width: 100%;
+  min-height: 150rpx;
+  padding: 20rpx;
+  background-color: #f7f8fa;
+  border-radius: 10rpx;
+  font-size: 26rpx;
+  color: #333333;
+  line-height: 1.6;
+  box-sizing: border-box;
+}
+
+.placeholder {
+  color: #999999;
+}
+
+.char-count {
+  display: block;
+  text-align: right;
+  font-size: 22rpx;
+  color: #999999;
+  margin-top: 10rpx;
+}
+
+.review-actions {
+  display: flex;
+  gap: 20rpx;
+}
+
+.review-btn {
+  flex: 1;
+  height: 80rpx;
+  border-radius: 40rpx;
+  font-size: 28rpx;
+  font-weight: bold;
+}
+
+.review-btn.reject {
+  background-color: #ff4d4f;
+  color: #ffffff;
+}
+
+.review-btn.approve {
+  background-color: #52c41a;
+  color: #ffffff;
+}
+
+.review-btn[disabled] {
+  opacity: 0.5;
 }
 </style>

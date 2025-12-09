@@ -28,7 +28,7 @@ export const STAGE_REQUIREMENTS = {
 
     // 医生必填项（审核时完成）
     doctorScales: ['HAMA', 'HAMD'], // 医生代填量表
-    requiresMedicalFiles: true, // 医生上传病历
+    requiresMedicalFiles: false, // 病历文件非必填
 
     // 兼容旧代码：所有量表列表
     requiredScales: ['AIS', 'ESS', 'GAD7', 'PHQ9', 'HAMA', 'HAMD'],
@@ -49,7 +49,7 @@ export const STAGE_REQUIREMENTS = {
     requiresConcomitantMeds: false,
 
     doctorScales: ['HAMA', 'HAMD'],
-    requiresMedicalFiles: true,
+    requiresMedicalFiles: false, // 病历文件非必填
 
     requiredScales: ['AIS', 'ESS', 'GAD7', 'PHQ9', 'HAMA', 'HAMD'],
   },

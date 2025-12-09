@@ -28,7 +28,7 @@ export const STAGE_REQUIREMENTS = {
 
     // 医生必填项（审核时完成）
     doctorScales: ['HAMA', 'HAMD'], // 医生代填量表
-    requiresMedicalFiles: true, // 医生上传病历
+    requiresMedicalFiles: false, // 病历文件非必填
 
     // 兼容旧代码：所有量表列表
     requiredScales: ['AIS', 'ESS', 'GAD7', 'PHQ9', 'HAMA', 'HAMD'],
@@ -36,7 +36,7 @@ export const STAGE_REQUIREMENTS = {
   V2: {
     patientScales: ['AIS', 'ESS', 'GAD7', 'PHQ9'],
     requiresMedicationRecord: true,
-    requiresConcomitantMeds: true,
+    requiresConcomitantMeds: false, // 合并用药可在阶段内随时填写,不作为必填项
 
     doctorScales: [],
     requiresMedicalFiles: false,
@@ -49,14 +49,14 @@ export const STAGE_REQUIREMENTS = {
     requiresConcomitantMeds: false,
 
     doctorScales: ['HAMA', 'HAMD'],
-    requiresMedicalFiles: true,
+    requiresMedicalFiles: false, // 病历文件非必填
 
     requiredScales: ['AIS', 'ESS', 'GAD7', 'PHQ9', 'HAMA', 'HAMD'],
   },
   V4: {
     patientScales: ['AIS', 'ESS', 'GAD7', 'PHQ9'],
     requiresMedicationRecord: false,
-    requiresConcomitantMeds: true,
+    requiresConcomitantMeds: false, // 合并用药可在阶段内随时填写,不作为必填项
 
     doctorScales: [],
     requiresMedicalFiles: false,

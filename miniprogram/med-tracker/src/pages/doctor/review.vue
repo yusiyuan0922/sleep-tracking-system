@@ -31,7 +31,14 @@
 
       <view v-if="!canComplete" class="warning-box">
         <text class="warning-icon">⚠️</text>
-        <text class="warning-text">该患者尚未完成所有必填项,无法通过审核</text>
+        <view class="warning-content">
+          <text class="warning-text">该患者尚未完成所有必填项,无法通过审核</text>
+          <view v-if="incompleteItems.length > 0" class="incomplete-list">
+            <text class="incomplete-title">未完成项目:</text>
+            <text v-for="item in incompleteItems" :key="item" class="incomplete-item">• {{ item }}</text>
+          </view>
+          <text v-else class="incomplete-hint">请检查患者是否已完成当前阶段的所有必填量表和记录</text>
+        </view>
       </view>
     </view>
 
@@ -70,7 +77,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
 import { patientAPI } from '../../api/patient';
 
@@ -136,6 +143,20 @@ const requirements = computed(() => {
 // 是否可以通过
 const canComplete = computed(() => {
   return completionStatus.value.canComplete === true;
+});
+
+// 未完成项目列表 - 优先使用后端返回的missingRequirements
+const incompleteItems = computed(() => {
+  // 优先使用后端返回的missingRequirements
+  const backendMissing = completionStatus.value.missingRequirements || [];
+  if (backendMissing.length > 0) {
+    return backendMissing.map((r: any) => r.name || r.message || `${r.code}量表`);
+  }
+
+  // 兜底：从前端计算的requirements中获取
+  return requirements.value
+    .filter((req) => !req.completed)
+    .map((req) => req.name);
 });
 
 // 加载患者信息
@@ -350,11 +371,45 @@ onLoad((options: any) => {
   font-size: 32rpx;
 }
 
-.warning-text {
+.warning-content {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10rpx;
+}
+
+.warning-text {
   font-size: 24rpx;
   color: #fa8c16;
   line-height: 1.5;
+}
+
+.incomplete-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+  margin-top: 10rpx;
+  padding-top: 10rpx;
+  border-top: 1rpx dashed #ffd591;
+}
+
+.incomplete-title {
+  font-size: 22rpx;
+  color: #d46b08;
+  font-weight: 500;
+}
+
+.incomplete-item {
+  font-size: 22rpx;
+  color: #d46b08;
+  padding-left: 10rpx;
+}
+
+.incomplete-hint {
+  font-size: 22rpx;
+  color: #d46b08;
+  font-style: italic;
+  margin-top: 10rpx;
 }
 
 /* 审核意见 */
