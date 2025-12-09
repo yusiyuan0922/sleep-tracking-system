@@ -124,6 +124,32 @@
       </view>
     </view>
 
+    <!-- 病历文件标签 -->
+    <view v-if="currentTab === 'medical-files'" class="tab-content">
+      <view
+        v-for="file in medicalFiles"
+        :key="file.id"
+        class="file-card"
+        @click="previewFile(file)"
+      >
+        <view class="file-icon">
+          <text>{{ getFileIcon(file.fileType) }}</text>
+        </view>
+        <view class="file-info">
+          <text class="file-name">{{ file.fileName }}</text>
+          <text class="file-meta">{{ file.stage }} | {{ formatFileSize(file.fileSize) }}</text>
+          <text class="file-time">{{ file.createdAt }}</text>
+        </view>
+        <view class="file-arrow">
+          <text>›</text>
+        </view>
+      </view>
+
+      <view v-if="medicalFiles.length === 0" class="empty-state">
+        <text class="empty-text">暂无病历文件</text>
+      </view>
+    </view>
+
     <!-- 不良事件标签 -->
     <view v-if="currentTab === 'adverse-events'" class="tab-content">
       <view
@@ -229,6 +255,7 @@ import { patientAPI } from '../../api/patient';
 import { scaleAPI } from '../../api/scale';
 import { medicationAPI } from '../../api/medication';
 import { adverseEventAPI } from '../../api/adverse-event';
+import { medicalFileAPI } from '../../api/medical-file';
 import { getStageDisplayName } from '../../utils/stage';
 
 const patientId = ref(0);
@@ -237,6 +264,7 @@ const currentTab = ref('info');
 const scaleRecords = ref<any[]>([]);
 const medications = ref<any[]>([]);
 const adverseEvents = ref<any[]>([]);
+const medicalFiles = ref<any[]>([]);
 const completedDoctorScales = ref<string[]>([]); // 当前阶段已完成的医生量表
 
 // 审核相关
@@ -248,6 +276,7 @@ const tabs = [
   { value: 'info', label: '基本信息' },
   { value: 'scales', label: '量表记录' },
   { value: 'medications', label: '用药记录' },
+  { value: 'medical-files', label: '病历文件' },
   { value: 'adverse-events', label: '不良事件' },
 ];
 
@@ -263,6 +292,59 @@ const relationshipLabels: any = {
   possibly_related: '可疑相关',
   unlikely_related: '可能无关',
   not_related: '肯定无关',
+};
+
+// 获取文件图标
+const getFileIcon = (fileType: string) => {
+  if (!fileType) return '📄';
+  if (fileType.includes('image')) return '🖼️';
+  if (fileType.includes('pdf')) return '📕';
+  if (fileType.includes('word') || fileType.includes('doc')) return '📘';
+  if (fileType.includes('excel') || fileType.includes('sheet')) return '📗';
+  return '📄';
+};
+
+// 格式化文件大小
+const formatFileSize = (bytes: number) => {
+  if (!bytes) return '未知大小';
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+};
+
+// 预览文件
+const previewFile = (file: any) => {
+  if (!file.fileUrl) {
+    uni.showToast({ title: '文件链接不存在', icon: 'none' });
+    return;
+  }
+
+  // 图片类型直接预览
+  if (file.fileType?.includes('image')) {
+    uni.previewImage({
+      urls: [file.fileUrl],
+      current: file.fileUrl,
+    });
+  } else {
+    // 其他类型打开文档
+    uni.downloadFile({
+      url: file.fileUrl,
+      success: (res) => {
+        if (res.statusCode === 200) {
+          uni.openDocument({
+            filePath: res.tempFilePath,
+            showMenu: true,
+            fail: () => {
+              uni.showToast({ title: '无法打开此类型文件', icon: 'none' });
+            },
+          });
+        }
+      },
+      fail: () => {
+        uni.showToast({ title: '下载文件失败', icon: 'none' });
+      },
+    });
+  }
 };
 
 // 阶段进度
@@ -425,6 +507,18 @@ const loadAdverseEvents = async () => {
   }
 };
 
+// 加载病历文件
+const loadMedicalFiles = async () => {
+  try {
+    const result = await medicalFileAPI.getList({
+      patientId: patientId.value,
+    });
+    medicalFiles.value = result.items || result || [];
+  } catch (error: any) {
+    console.error('加载病历文件失败:', error);
+  }
+};
+
 // 切换标签
 const changeTab = (tab: string) => {
   currentTab.value = tab;
@@ -436,6 +530,8 @@ const changeTab = (tab: string) => {
     loadMedications();
   } else if (tab === 'adverse-events' && adverseEvents.value.length === 0) {
     loadAdverseEvents();
+  } else if (tab === 'medical-files' && medicalFiles.value.length === 0) {
+    loadMedicalFiles();
   }
 };
 
@@ -795,11 +891,61 @@ onShow(() => {
 /* 卡片样式 */
 .scale-record-card,
 .medication-card,
-.event-card {
+.event-card,
+.file-card {
   background-color: #ffffff;
   border-radius: 20rpx;
   padding: 30rpx;
   margin-bottom: 20rpx;
+}
+
+/* 病历文件卡片 */
+.file-card {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+}
+
+.file-icon {
+  width: 80rpx;
+  height: 80rpx;
+  background-color: #f0f5ff;
+  border-radius: 16rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40rpx;
+}
+
+.file-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.file-name {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #333333;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-meta {
+  font-size: 24rpx;
+  color: #999999;
+}
+
+.file-time {
+  font-size: 22rpx;
+  color: #cccccc;
+}
+
+.file-arrow {
+  font-size: 32rpx;
+  color: #cccccc;
 }
 
 .record-header,
