@@ -283,11 +283,11 @@ const stageProgress = computed(() => {
   });
 });
 
-// 是否显示审核区域（只要加载了completionStatus数据，就显示审核区域）
+// 是否显示审核区域（只有当患者完成所有必填项后才显示审核区域）
 const canReview = computed(() => {
-  // 只要有completionStatus数据（即当前阶段未完成），就显示审核区域
-  // 这样医生可以看到患者的完成进度
-  return completionStatus.value.currentStage !== undefined &&
+  // 只有当 canComplete 为 true 时才显示审核区域
+  // 即患者已完成当前阶段所有必填项，等待医生审核
+  return completionStatus.value.canComplete === true &&
          patientInfo.value.currentStage !== 'completed';
 });
 
