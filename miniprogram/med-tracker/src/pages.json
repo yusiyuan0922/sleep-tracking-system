@@ -9,7 +9,9 @@
     {
       "path": "pages/index/index",
       "style": {
-        "navigationBarTitleText": "首页"
+        "navigationBarTitleText": "首页",
+        "enablePullDownRefresh": true,
+        "backgroundTextStyle": "dark"
       }
     },
     {
@@ -27,7 +29,9 @@
     {
       "path": "pages/scale/list",
       "style": {
-        "navigationBarTitleText": "量表列表"
+        "navigationBarTitleText": "量表列表",
+        "enablePullDownRefresh": true,
+        "backgroundTextStyle": "dark"
       }
     },
     {
@@ -57,7 +61,9 @@
     {
       "path": "pages/medication/list",
       "style": {
-        "navigationBarTitleText": "合并用药"
+        "navigationBarTitleText": "合并用药",
+        "enablePullDownRefresh": true,
+        "backgroundTextStyle": "dark"
       }
     },
     {
@@ -93,13 +99,27 @@
     {
       "path": "pages/profile/index",
       "style": {
-        "navigationBarTitleText": "个人中心"
+        "navigationBarTitleText": "个人中心",
+        "enablePullDownRefresh": true,
+        "backgroundTextStyle": "dark"
+      }
+    },
+    {
+      "path": "pages/doctor/home",
+      "style": {
+        "navigationBarTitleText": "医生首页"
       }
     },
     {
       "path": "pages/doctor/index",
       "style": {
         "navigationBarTitleText": "患者管理"
+      }
+    },
+    {
+      "path": "pages/doctor/message",
+      "style": {
+        "navigationBarTitleText": "消息中心"
       }
     },
     {
@@ -121,6 +141,12 @@
       }
     },
     {
+      "path": "pages/doctor/select-scale",
+      "style": {
+        "navigationBarTitleText": "选择量表"
+      }
+    },
+    {
       "path": "pages/doctor/pending-review",
       "style": {
         "navigationBarTitleText": "待审核列表"
@@ -136,6 +162,18 @@
       "path": "pages/doctor/login",
       "style": {
         "navigationBarTitleText": "医生登录"
+      }
+    },
+    {
+      "path": "pages/message/list",
+      "style": {
+        "navigationBarTitleText": "消息中心"
+      }
+    },
+    {
+      "path": "pages/message/detail",
+      "style": {
+        "navigationBarTitleText": "消息详情"
       }
     }
   ],

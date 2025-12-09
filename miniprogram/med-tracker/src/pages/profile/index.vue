@@ -56,6 +56,12 @@
 
       <!-- 功能菜单 -->
       <view class="menu-list">
+        <view class="menu-item" @click="goToPage('/pages/message/list')">
+          <text class="menu-icon">📬</text>
+          <text class="menu-text">消息中心</text>
+          <view v-if="unreadCount > 0" class="unread-badge">{{ unreadCount }}</view>
+          <text class="menu-arrow">›</text>
+        </view>
         <view class="menu-item" @click="goToPage('/pages/doctor/index')">
           <text class="menu-icon">👥</text>
           <text class="menu-text">患者管理</text>
@@ -172,24 +178,10 @@
 
     <!-- 功能菜单 -->
     <view class="menu-list">
-      <view class="menu-item" @click="goToPage('/pages/scale/list')">
-        <text class="menu-icon">📊</text>
-        <text class="menu-text">我的量表</text>
-        <text class="menu-arrow">›</text>
-      </view>
-      <view class="menu-item" @click="goToPage('/pages/medication/list')">
-        <text class="menu-icon">💊</text>
-        <text class="menu-text">用药记录</text>
-        <text class="menu-arrow">›</text>
-      </view>
-      <view class="menu-item" @click="goToPage('/pages/adverse-event/list')">
-        <text class="menu-icon">⚠️</text>
-        <text class="menu-text">不良事件</text>
-        <text class="menu-arrow">›</text>
-      </view>
-      <view class="menu-item" @click="goToPage('/pages/medical-file/list')">
-        <text class="menu-icon">📄</text>
-        <text class="menu-text">病历文件</text>
+      <view class="menu-item" @click="goToPage('/pages/message/list')">
+        <text class="menu-icon">📬</text>
+        <text class="menu-text">消息中心</text>
+        <view v-if="unreadCount > 0" class="unread-badge">{{ unreadCount }}</view>
         <text class="menu-arrow">›</text>
       </view>
     </view>
@@ -204,8 +196,10 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
+import { onShow, onPullDownRefresh } from '@dcloudio/uni-app';
 import { patientAPI } from '../../api/patient';
 import { doctorAPI } from '../../api/doctor';
+import { getUnreadCount } from '../../api/message';
 import config from '../../config';
 import DoctorNav from '../../components/doctor-nav/index.vue';
 
@@ -221,6 +215,9 @@ const stats = ref({
   totalPatients: 0,
   pendingReview: 0,
 });
+
+// 未读消息数
+const unreadCount = ref(0);
 
 // 阶段进度
 const stageProgress = computed(() => {
@@ -319,6 +316,17 @@ const goToPage = (url: string) => {
   }
 };
 
+// 加载未读消息数
+const loadUnreadCount = async () => {
+  try {
+    const result = await getUnreadCount();
+    unreadCount.value = result.count || 0;
+  } catch (error) {
+    // 静默失败,不影响主流程
+    console.error('获取未读消息数失败:', error);
+  }
+};
+
 // 退出登录
 const handleLogout = () => {
   uni.showModal({
@@ -346,6 +354,44 @@ onMounted(() => {
     loadDoctorInfo();
   } else if (userRole.value === 'patient') {
     loadPatientInfo();
+  }
+
+  // 加载未读消息数
+  loadUnreadCount();
+
+  // 监听消息已读事件
+  uni.$on('message-read', () => {
+    loadUnreadCount();
+  });
+});
+
+onShow(() => {
+  // 页面显示时刷新未读数
+  loadUnreadCount();
+});
+
+// 下拉刷新
+onPullDownRefresh(async () => {
+  try {
+    // 根据角色刷新不同的数据
+    if (userRole.value === 'doctor') {
+      await loadDoctorInfo();
+    } else if (userRole.value === 'patient') {
+      await loadPatientInfo();
+    }
+
+    // 刷新未读消息数
+    await loadUnreadCount();
+
+    uni.showToast({
+      title: '刷新成功',
+      icon: 'success',
+      duration: 1000,
+    });
+  } catch (error) {
+    console.error('下拉刷新失败:', error);
+  } finally {
+    uni.stopPullDownRefresh();
   }
 });
 </script>
@@ -575,6 +621,20 @@ onMounted(() => {
   flex: 1;
   font-size: 28rpx;
   color: #333333;
+}
+
+.unread-badge {
+  min-width: 36rpx;
+  height: 36rpx;
+  padding: 0 8rpx;
+  background-color: #ff3b30;
+  color: #ffffff;
+  font-size: 20rpx;
+  font-weight: bold;
+  border-radius: 18rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .menu-arrow {

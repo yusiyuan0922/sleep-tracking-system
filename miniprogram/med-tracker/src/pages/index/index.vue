@@ -1,10 +1,30 @@
 <template>
   <view class="home-container">
+    <!-- 引入空状态组件 -->
+    <Empty
+      v-if="showEmpty"
+      type="task"
+      title="暂无待办任务"
+      description="当前阶段所有任务已完成，请等待医生审核或进入下一阶段"
+      :padding-top="'200rpx'"
+    />
+
     <!-- 医生端 -->
     <view v-if="userRole === 'doctor'" class="doctor-home">
       <view class="doctor-header">
-        <text class="welcome-text">欢迎，{{ userName }}医生</text>
-        <text class="subtitle">睡眠跟踪系统 - 医生端</text>
+        <view class="header-top">
+          <view class="header-left">
+            <text class="welcome-text">欢迎，{{ userName }}医生</text>
+            <text class="subtitle">睡眠跟踪系统 - 医生端</text>
+          </view>
+          <!-- 医生端消息入口 -->
+          <view class="doctor-message-btn" @click="goToMessageCenter">
+            <text class="doctor-message-icon">🔔</text>
+            <view v-if="unreadCount > 0" class="doctor-unread-badge">
+              {{ unreadCount > 99 ? '99+' : unreadCount }}
+            </view>
+          </view>
+        </view>
       </view>
 
       <view class="quick-actions">
@@ -19,6 +39,13 @@
         <view class="action-item" @click="navigateTo('/pages/doctor/fill-scale')">
           <view class="action-icon">📊</view>
           <text class="action-text">填写量表</text>
+        </view>
+        <view class="action-item" @click="goToMessageCenter">
+          <view class="action-icon-wrapper">
+            <text class="action-icon">📨</text>
+            <view v-if="unreadCount > 0" class="action-badge">{{ unreadCount > 9 ? '9+' : unreadCount }}</view>
+          </view>
+          <text class="action-text">消息中心</text>
         </view>
       </view>
 
@@ -35,6 +62,30 @@
 
     <!-- 患者端 -->
     <view v-else-if="userRole === 'patient'" class="patient-home">
+      <!-- 快捷入口 - 并排双卡片 -->
+      <view class="quick-entry-row">
+        <!-- 消息中心入口 -->
+        <view class="quick-entry-card message-card" @click="goToMessageCenter">
+          <view class="entry-icon-wrapper">
+            <text class="entry-icon">🔔</text>
+            <view v-if="unreadCount > 0" class="entry-badge">
+              {{ unreadCount > 99 ? '99+' : unreadCount }}
+            </view>
+          </view>
+          <text class="entry-title">消息中心</text>
+          <text class="entry-desc">{{ unreadCount > 0 ? `${unreadCount}条未读` : '系统通知' }}</text>
+        </view>
+
+        <!-- 不良事件上报入口 -->
+        <view class="quick-entry-card adverse-card" @click="goToAdverseEvent">
+          <view class="entry-icon-wrapper">
+            <text class="entry-icon">⚠️</text>
+          </view>
+          <text class="entry-title">不良事件</text>
+          <text class="entry-desc">及时上报</text>
+        </view>
+      </view>
+
       <!-- 患者信息卡片 -->
       <view class="patient-card">
         <view class="patient-header">
@@ -89,13 +140,27 @@
           <text class="task-arrow">›</text>
         </view>
 
-        <view v-if="tasks.length === 0" class="empty-state">
-          <text class="empty-text">暂无任务</text>
+        <!-- 使用 Empty 组件替代简单的空状态文字 -->
+        <Empty
+          v-if="tasks.length === 0"
+          type="task"
+          icon="🎉"
+          title="所有任务已完成"
+          description="当前阶段任务已全部完成，做得很好！"
+          :padding-top="'40rpx'"
+        />
+      </view>
+
+      <!-- 等待审核中提示 -->
+      <view v-if="patientInfo.pendingReview" class="submit-section">
+        <view class="pending-review-tip">
+          <text class="pending-icon">⏳</text>
+          <text class="pending-text">已提交审核，请等待医生审核</text>
         </view>
       </view>
 
       <!-- 提交审核按钮 -->
-      <view v-if="canSubmit" class="submit-section">
+      <view v-else-if="canSubmit" class="submit-section">
         <button class="submit-btn" @click="handleSubmit">提交审核</button>
       </view>
     </view>
@@ -105,9 +170,16 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { onShow } from '@dcloudio/uni-app';
+import { onShow, onPullDownRefresh } from '@dcloudio/uni-app';
 import { patientAPI } from '../../api/patient';
+import { getUnreadCount } from '../../api/message';
 import config from '@/config';
+import Empty from '@/components/common/Empty.vue';
+
+// 空状态显示控制 - 当没有用户角色时显示
+const showEmpty = computed(() => {
+  return !userRole.value;
+});
 
 // 用户信息
 const userRole = ref<'patient' | 'doctor' | ''>('');
@@ -117,10 +189,33 @@ const userName = ref('');
 const patientInfo = ref<any>({});
 const currentStage = ref('V1');
 const stageCompletion = ref<any>({});
+const unreadCount = ref(0);
 
 // 页面跳转
 const navigateTo = (url: string) => {
   uni.navigateTo({ url });
+};
+
+// 跳转到不良事件页面
+const goToAdverseEvent = () => {
+  uni.navigateTo({ url: '/pages/adverse-event/list' });
+};
+
+// 跳转到消息中心
+const goToMessageCenter = () => {
+  uni.navigateTo({ url: '/pages/message/list' });
+};
+
+// 加载未读消息数量
+const loadUnreadCount = async () => {
+  try {
+    const res = await getUnreadCount();
+    // 返回格式可能是 { count: number } 或直接是 number
+    unreadCount.value = typeof res === 'number' ? res : (res?.count || 0);
+  } catch (error) {
+    console.error('获取未读消息数失败:', error);
+    unreadCount.value = 0;
+  }
 };
 
 // 所有任务
@@ -145,18 +240,8 @@ const tasks = computed(() => {
     });
   }
 
-  // 2. 合并用药 (第二位)
-  if (completion.requirements.requiresConcomitantMedication) {
-    const completed = completion.completedRequirements?.some((r: any) => r.type === 'concomitantMedication');
-    taskList.push({
-      type: 'concomitantMedication',
-      name: '填写合并用药',
-      description: '记录其他药物使用情况',
-      completed,
-      route: '/pages/medication/add?type=concomitant',
-      priority: 1,
-    });
-  }
+  // 2. 合并用药已移除 - 不属于必填项，不影响阶段推进
+  // 合并用药在用药tabbar中可随时填写，不作为待完成任务显示
 
   // 3. 量表任务 (第三位)
   if (completion.requirements.requiredScales) {
@@ -212,10 +297,13 @@ const canSubmit = computed(() => {
 // 初始化用户角色
 const initUserRole = () => {
   const userInfo = uni.getStorageSync(config.userInfoKey);
+  console.log('initUserRole - userInfo:', userInfo);
+  console.log('initUserRole - userInfo.role:', userInfo?.role);
   if (userInfo) {
     userRole.value = userInfo.role || 'patient';
     userName.value = userInfo.name || '用户';
   }
+  console.log('initUserRole - 最终 userRole.value:', userRole.value);
 };
 
 // 加载患者信息
@@ -277,20 +365,19 @@ const handleSubmit = () => {
     success: async (res) => {
       if (res.confirm) {
         try {
-          // 调用完成阶段接口
-          const stage = currentStage.value;
-          await patientAPI[`complete${stage}`](patientInfo.value.id, {});
+          // 调用患者提交审核接口（只设置pendingReview，等待医生审核）
+          await patientAPI.submitForReview(patientInfo.value.id);
 
           uni.showToast({
-            title: '提交成功',
+            title: '提交成功，请等待医生审核',
             icon: 'success',
-            duration: 1500,
+            duration: 2000,
           });
 
           // 重新加载数据
           setTimeout(() => {
             loadPatientInfo();
-          }, 1500);
+          }, 2000);
         } catch (error: any) {
           uni.showToast({
             title: error.message || '提交失败',
@@ -302,6 +389,20 @@ const handleSubmit = () => {
   });
 };
 
+// 跳转到医生首页
+const redirectToDoctor = () => {
+  console.log('执行跳转到医生端首页...');
+  uni.reLaunch({
+    url: '/pages/doctor/home',
+    success: () => {
+      console.log('跳转到医生首页成功');
+    },
+    fail: (err) => {
+      console.error('跳转到医生首页失败:', err);
+    }
+  });
+};
+
 onMounted(() => {
   console.log('===== 首页 onMounted 开始 =====');
   const storageUserInfo = uni.getStorageSync(config.userInfoKey);
@@ -310,7 +411,19 @@ onMounted(() => {
   initUserRole();
   console.log('initUserRole 后，userRole.value =', userRole.value);
 
-  // 只有患者端才加载患者信息
+  // 如果是医生，延迟跳转到医生首页，避免和其他操作冲突
+  if (userRole.value === 'doctor') {
+    console.log('检测到医生角色，准备跳转...');
+    setTimeout(() => {
+      redirectToDoctor();
+    }, 50);
+    return;
+  }
+
+  // 加载未读消息数量
+  loadUnreadCount();
+
+  // 患者端加载患者信息
   if (userRole.value === 'patient') {
     loadPatientInfo();
   }
@@ -322,9 +435,51 @@ onMounted(() => {
 onShow(() => {
   initUserRole();
 
+  // 如果是医生，延迟跳转到医生首页
+  if (userRole.value === 'doctor') {
+    console.log('onShow: 检测到医生角色，准备跳转...');
+    setTimeout(() => {
+      redirectToDoctor();
+    }, 50);
+    return;
+  }
+
+  // 刷新未读消息数量
+  loadUnreadCount();
+
   // 只有患者端才刷新阶段完成状态
-  if (userRole.value === 'patient' && patientInfo.value.id) {
-    loadStageCompletion();
+  if (userRole.value === 'patient') {
+    if (patientInfo.value.id) {
+      loadStageCompletion();
+    }
+  }
+});
+
+// 监听消息已读事件，刷新未读数
+uni.$on('message-read', () => {
+  loadUnreadCount();
+});
+
+// 下拉刷新
+onPullDownRefresh(async () => {
+  try {
+    // 刷新未读消息数量
+    await loadUnreadCount();
+
+    // 患者端刷新患者信息和阶段状态
+    if (userRole.value === 'patient') {
+      await loadPatientInfo();
+    }
+
+    uni.showToast({
+      title: '刷新成功',
+      icon: 'success',
+      duration: 1000,
+    });
+  } catch (error) {
+    console.error('下拉刷新失败:', error);
+  } finally {
+    uni.stopPullDownRefresh();
   }
 });
 </script>
@@ -350,6 +505,49 @@ onShow(() => {
   color: #ffffff;
 }
 
+.header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.header-left {
+  display: flex;
+  flex-direction: column;
+}
+
+.doctor-message-btn {
+  position: relative;
+  width: 80rpx;
+  height: 80rpx;
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.doctor-message-icon {
+  font-size: 40rpx;
+}
+
+.doctor-unread-badge {
+  position: absolute;
+  top: -6rpx;
+  right: -6rpx;
+  min-width: 36rpx;
+  height: 36rpx;
+  background-color: #ff4d4f;
+  border-radius: 18rpx;
+  font-size: 22rpx;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 8rpx;
+  font-weight: bold;
+}
+
 .welcome-text {
   display: block;
   font-size: 40rpx;
@@ -365,7 +563,7 @@ onShow(() => {
 
 .quick-actions {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 20rpx;
   margin-bottom: 30rpx;
 }
@@ -379,10 +577,40 @@ onShow(() => {
   align-items: center;
   gap: 15rpx;
   box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.06);
+  transition: all 0.15s ease;
+}
+
+.action-item:active {
+  opacity: 0.8;
+  transform: scale(0.96);
 }
 
 .action-icon {
   font-size: 60rpx;
+}
+
+.action-icon-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.action-badge {
+  position: absolute;
+  top: -10rpx;
+  right: -16rpx;
+  min-width: 32rpx;
+  height: 32rpx;
+  background-color: #ff4d4f;
+  border-radius: 16rpx;
+  font-size: 20rpx;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 6rpx;
+  font-weight: bold;
 }
 
 .action-text {
@@ -545,14 +773,41 @@ onShow(() => {
   align-items: center;
   padding: 25rpx 0;
   border-bottom: 1rpx solid #f0f0f0;
+  transition: all 0.15s ease;
+}
+
+.task-item:active {
+  opacity: 0.8;
+  transform: scale(0.98);
 }
 
 .task-item:last-child {
   border-bottom: none;
 }
 
+/* 已完成任务 - 使用绿色主题而非降低透明度 */
 .task-item.completed {
-  opacity: 0.6;
+  background-color: #f6ffed;
+  border-radius: 12rpx;
+  margin: 0 -20rpx;
+  padding: 25rpx 20rpx;
+  border-bottom: none;
+}
+
+.task-item.completed + .task-item {
+  border-top: none;
+}
+
+.task-item.completed .task-name {
+  color: #52c41a;
+}
+
+.task-item.completed .task-desc {
+  color: #95de64;
+}
+
+.task-item.completed .task-arrow {
+  color: #52c41a;
 }
 
 .task-icon {
@@ -600,6 +855,104 @@ onShow(() => {
   color: #999999;
 }
 
+/* 快捷入口 - 并排双卡片 */
+.quick-entry-row {
+  display: flex;
+  gap: 20rpx;
+  margin-bottom: 20rpx;
+}
+
+.quick-entry-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 30rpx 20rpx;
+  border-radius: 20rpx;
+  transition: all 0.15s ease;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.08);
+}
+
+.quick-entry-card:active {
+  opacity: 0.85;
+  transform: scale(0.96);
+}
+
+/* 消息中心卡片 */
+.message-card {
+  background: linear-gradient(135deg, #e6f7ff 0%, #bae7ff 100%);
+  border: 2rpx solid #91d5ff;
+}
+
+.message-card .entry-title {
+  color: #096dd9;
+}
+
+.message-card .entry-desc {
+  color: #1890ff;
+}
+
+/* 不良事件卡片 */
+.adverse-card {
+  background: linear-gradient(135deg, #fffbe6 0%, #fff1b8 100%);
+  border: 2rpx solid #ffd666;
+}
+
+.adverse-card .entry-title {
+  color: #d48806;
+}
+
+.adverse-card .entry-desc {
+  color: #ad6800;
+}
+
+/* 入口图标 */
+.entry-icon-wrapper {
+  position: relative;
+  width: 80rpx;
+  height: 80rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12rpx;
+}
+
+.entry-icon {
+  font-size: 56rpx;
+}
+
+/* 未读徽章 */
+.entry-badge {
+  position: absolute;
+  top: -4rpx;
+  right: -8rpx;
+  min-width: 36rpx;
+  height: 36rpx;
+  background-color: #ff4d4f;
+  border-radius: 18rpx;
+  font-size: 20rpx;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 8rpx;
+  font-weight: bold;
+  box-shadow: 0 2rpx 6rpx rgba(255, 77, 79, 0.4);
+}
+
+/* 入口标题 */
+.entry-title {
+  font-size: 28rpx;
+  font-weight: bold;
+  margin-bottom: 6rpx;
+}
+
+/* 入口描述 */
+.entry-desc {
+  font-size: 22rpx;
+}
+
 /* 提交按钮 */
 .submit-section {
   position: fixed;
@@ -619,5 +972,26 @@ onShow(() => {
   border-radius: 45rpx;
   font-size: 32rpx;
   font-weight: bold;
+}
+
+/* 等待审核提示 */
+.pending-review-tip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24rpx;
+  background: linear-gradient(135deg, #fff7e6 0%, #ffe7ba 100%);
+  border-radius: 16rpx;
+}
+
+.pending-icon {
+  font-size: 36rpx;
+  margin-right: 16rpx;
+}
+
+.pending-text {
+  font-size: 30rpx;
+  color: #d48806;
+  font-weight: 500;
 }
 </style>

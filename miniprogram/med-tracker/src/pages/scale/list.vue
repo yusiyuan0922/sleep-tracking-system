@@ -47,6 +47,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
+import { onShow, onPullDownRefresh } from '@dcloudio/uni-app';
 import { scaleAPI } from '../../api/scale';
 import { patientAPI } from '../../api/patient';
 
@@ -58,8 +59,8 @@ const patientInfo = ref<any>({});
 const scaleMetadata: any = {
   AIS: { name: '雅典失眠量表', description: '评估失眠严重程度', questionCount: 8, estimatedTime: 5 },
   ESS: { name: 'Epworth嗜睡量表', description: '评估日间嗜睡程度', questionCount: 8, estimatedTime: 3 },
-  'GAD-7': { name: '广泛性焦虑量表', description: '评估焦虑症状', questionCount: 7, estimatedTime: 3 },
-  'PHQ-9': { name: '患者健康问卷', description: '评估抑郁症状', questionCount: 9, estimatedTime: 5 },
+  GAD7: { name: '广泛性焦虑量表', description: '评估焦虑症状', questionCount: 7, estimatedTime: 3 },
+  PHQ9: { name: '患者健康问卷', description: '评估抑郁症状', questionCount: 9, estimatedTime: 5 },
   HAMA: { name: '汉密尔顿焦虑量表', description: '医生代填', questionCount: 14, estimatedTime: 10 },
   HAMD: { name: '汉密尔顿抑郁量表', description: '医生代填', questionCount: 24, estimatedTime: 15 },
 };
@@ -78,13 +79,14 @@ const loadData = async () => {
     // 构建量表列表
     const requiredScales = completion.requirements?.requiredScales || [];
     scales.value = requiredScales.map((code: string) => {
-      const completed = completion.completedRequirements?.some(
+      const completedItem = completion.completedRequirements?.find(
         (r: any) => r.type === 'scale' && r.code === code
       );
       return {
         code,
         ...scaleMetadata[code],
-        completed,
+        completed: !!completedItem,
+        recordId: completedItem?.recordId || null,
       };
     });
   } catch (error: any) {
@@ -97,6 +99,15 @@ const loadData = async () => {
 
 // 点击量表
 const handleScaleClick = (scale: any) => {
+  // 如果已完成,跳转到详情页查看
+  if (scale.completed && scale.recordId) {
+    uni.navigateTo({
+      url: `/pages/scale/detail?id=${scale.recordId}`,
+    });
+    return;
+  }
+
+  // 医生代填的量表不允许患者填写
   if (scale.code === 'HAMA' || scale.code === 'HAMD') {
     uni.showToast({
       title: '该量表由医生代填',
@@ -105,6 +116,7 @@ const handleScaleClick = (scale: any) => {
     return;
   }
 
+  // 未完成的量表,跳转到填写页
   uni.navigateTo({
     url: `/pages/scale/fill?code=${scale.code}&stage=${currentStage.value}`,
   });
@@ -119,6 +131,27 @@ const goToHistory = () => {
 
 onMounted(() => {
   loadData();
+});
+
+// 页面显示时刷新数据
+onShow(() => {
+  loadData();
+});
+
+// 下拉刷新
+onPullDownRefresh(async () => {
+  try {
+    await loadData();
+    uni.showToast({
+      title: '刷新成功',
+      icon: 'success',
+      duration: 1000,
+    });
+  } catch (error) {
+    console.error('下拉刷新失败:', error);
+  } finally {
+    uni.stopPullDownRefresh();
+  }
 });
 </script>
 
