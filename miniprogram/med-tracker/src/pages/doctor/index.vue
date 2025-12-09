@@ -47,7 +47,7 @@
             <view class="patient-name-row">
               <text class="patient-name">{{ patient.name }}</text>
               <view class="stage-badge" :class="'stage-' + patient.currentStage?.toLowerCase()">
-                {{ patient.currentStage }}
+                {{ getStageDisplayName(patient.currentStage) }}
               </view>
             </view>
             <text class="patient-code">编号: {{ patient.patientCode }}</text>
@@ -58,7 +58,7 @@
         <view v-if="patient.pendingReview" class="patient-status">
           <view class="status-badge pending">
             <text class="status-icon">⏳</text>
-            <text>{{ patient.currentStage }} 待审核</text>
+            <text>{{ getStageDisplayName(patient.currentStage) }} 待审核</text>
           </view>
         </view>
 
@@ -87,6 +87,7 @@
 import { ref, computed } from 'vue';
 import { onShow } from '@dcloudio/uni-app';
 import { doctorAPI } from '../../api/doctor';
+import { getStageDisplayName } from '../../utils/stage';
 import DoctorTabbar from '../../components/doctor-tabbar/index.vue';
 
 const loading = ref(false);

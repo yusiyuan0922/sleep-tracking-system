@@ -94,7 +94,7 @@
             <text class="patient-code">编号: {{ patientInfo.patientNo }}</text>
           </view>
           <view class="stage-badge" :class="'stage-' + currentStage.toLowerCase()">
-            {{ currentStage }}
+            {{ displayStage }}
           </view>
         </view>
         <view class="patient-detail">
@@ -173,6 +173,7 @@ import { ref, computed, onMounted } from 'vue';
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app';
 import { patientAPI } from '../../api/patient';
 import { getUnreadCount } from '../../api/message';
+import { getStageDisplayName } from '../../utils/stage';
 import config from '@/config';
 import Empty from '@/components/common/Empty.vue';
 
@@ -188,6 +189,11 @@ const userName = ref('');
 // 患者端数据
 const patientInfo = ref<any>({});
 const currentStage = ref('V1');
+
+// 显示用的阶段名称
+const displayStage = computed(() => {
+  return getStageDisplayName(currentStage.value);
+});
 const stageCompletion = ref<any>({});
 const unreadCount = ref(0);
 

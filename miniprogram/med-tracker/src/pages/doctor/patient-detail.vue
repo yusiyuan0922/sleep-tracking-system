@@ -9,7 +9,7 @@
         <view class="name-row">
           <text class="patient-name">{{ patientInfo.user?.name || '患者' }}</text>
           <view class="stage-badge" :class="'stage-' + patientInfo.currentStage?.toLowerCase()">
-            {{ patientInfo.currentStage }}
+            {{ getStageDisplayName(patientInfo.currentStage) }}
           </view>
         </view>
         <text class="patient-code">编号: {{ patientInfo.patientNo }}</text>
@@ -153,7 +153,7 @@
     <!-- 审核区域（待审核时显示） -->
     <view v-if="canReview" class="review-section">
       <view class="review-header">
-        <text class="review-title">📋 {{ patientInfo.currentStage }}阶段审核</text>
+        <text class="review-title">📋 {{ getStageDisplayName(patientInfo.currentStage) }}阶段审核</text>
         <view class="pending-badge">待审核</view>
       </view>
 
@@ -229,6 +229,7 @@ import { patientAPI } from '../../api/patient';
 import { scaleAPI } from '../../api/scale';
 import { medicationAPI } from '../../api/medication';
 import { adverseEventAPI } from '../../api/adverse-event';
+import { getStageDisplayName } from '../../utils/stage';
 
 const patientId = ref(0);
 const patientInfo = ref<any>({});
@@ -483,9 +484,10 @@ const goToUploadFile = () => {
 
 // 通过审核
 const handleApprove = () => {
+  const stageName = getStageDisplayName(patientInfo.value.currentStage);
   uni.showModal({
     title: '确认通过',
-    content: `确认通过${patientInfo.value.currentStage}阶段的审核吗?`,
+    content: `确认通过${stageName}阶段的审核吗?`,
     success: async (res) => {
       if (res.confirm) {
         await submitReview('approved');
@@ -504,9 +506,10 @@ const handleReject = () => {
     return;
   }
 
+  const stageName = getStageDisplayName(patientInfo.value.currentStage);
   uni.showModal({
     title: '确认驳回',
-    content: `确认驳回${patientInfo.value.currentStage}阶段吗?`,
+    content: `确认驳回${stageName}阶段吗?`,
     confirmText: '确认驳回',
     confirmColor: '#ff4d4f',
     success: async (res) => {

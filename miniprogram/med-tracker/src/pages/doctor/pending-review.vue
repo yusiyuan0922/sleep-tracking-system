@@ -23,7 +23,7 @@
           <view class="patient-info">
             <view class="name-row">
               <text class="patient-name">{{ patient.name }}</text>
-              <view class="stage-badge">{{ patient.currentStage }}</view>
+              <view class="stage-badge">{{ getStageDisplayName(patient.currentStage) }}</view>
             </view>
             <text class="patient-code">编号: {{ patient.patientCode }}</text>
             <text class="patient-meta">{{ patient.gender === 'male' ? '男' : '女' }} | 入组: {{ patient.enrollmentDate }}</text>
@@ -33,7 +33,7 @@
         <view class="card-status">
           <view class="status-badge">
             <text class="status-icon">⏳</text>
-            <text>{{ patient.currentStage }} 阶段待审核</text>
+            <text>{{ getStageDisplayName(patient.currentStage) }} 阶段待审核</text>
           </view>
         </view>
 
@@ -63,6 +63,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { onShow } from '@dcloudio/uni-app';
 import { doctorAPI } from '../../api/doctor';
+import { getStageDisplayName } from '../../utils/stage';
 import DoctorTabbar from '../../components/doctor-tabbar/index.vue';
 
 const loading = ref(false);

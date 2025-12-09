@@ -73,7 +73,7 @@
           </view>
           <view class="pending-info">
             <text class="pending-name">{{ patient.name }}</text>
-            <text class="pending-stage">{{ patient.currentStage }} 待审核</text>
+            <text class="pending-stage">{{ getStageDisplayName(patient.currentStage) }} 待审核</text>
           </view>
           <text class="pending-arrow">></text>
         </view>
@@ -113,6 +113,7 @@ import { ref, computed, onMounted } from 'vue';
 import { onShow } from '@dcloudio/uni-app';
 import { doctorAPI } from '../../api/doctor';
 import { getUnreadCount } from '../../api/message';
+import { getStageDisplayName } from '../../utils/stage';
 import DoctorTabbar from '../../components/doctor-tabbar/index.vue';
 import config from '@/config';
 

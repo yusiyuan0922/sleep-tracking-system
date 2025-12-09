@@ -50,7 +50,7 @@
           <view class="patient-info">
             <view class="name-row">
               <text class="patient-name">{{ patient.name }}</text>
-              <view class="stage-badge">{{ patient.currentStage }}</view>
+              <view class="stage-badge">{{ getStageDisplayName(patient.currentStage) }}</view>
             </view>
             <text class="patient-code">编号: {{ patient.patientCode }}</text>
             <text v-if="patient.allScalesCompleted" class="patient-completed-tag">医生量表已完成</text>
@@ -84,7 +84,7 @@
     <view v-if="step === 2" class="step-content">
       <view class="section-header">
         <text class="section-title">请选择要填写的量表</text>
-        <text class="section-hint">{{ selectedPatient?.name }} - {{ selectedPatient?.currentStage }}阶段</text>
+        <text class="section-hint">{{ selectedPatient?.name }} - {{ getStageDisplayName(selectedPatient?.currentStage) }}阶段</text>
       </view>
 
       <!-- 量表列表 -->
@@ -136,6 +136,7 @@ import { ref, computed, onMounted } from 'vue';
 import { onShow } from '@dcloudio/uni-app';
 import { doctorAPI } from '../../api/doctor';
 import { scaleAPI } from '../../api/scale';
+import { getStageDisplayName } from '../../utils/stage';
 
 const step = ref(1);
 const loading = ref(false);
