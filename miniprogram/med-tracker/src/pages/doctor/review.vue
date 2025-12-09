@@ -102,9 +102,9 @@ const requirements = computed(() => {
 
   // 病历文件
   if (reqs.requiresMedicalFiles) {
-    const isCompleted = completed.some((r: any) => r.type === 'medical_file');
+    const isCompleted = completed.some((r: any) => r.type === 'medicalFile');
     list.push({
-      type: 'medical_file',
+      type: 'medicalFile',
       name: '病历文件',
       completed: isCompleted,
     });
@@ -112,19 +112,19 @@ const requirements = computed(() => {
 
   // 用药记录
   if (reqs.requiresMedicationRecord) {
-    const isCompleted = completed.some((r: any) => r.type === 'medication_record');
+    const isCompleted = completed.some((r: any) => r.type === 'medicationRecord');
     list.push({
-      type: 'medication_record',
+      type: 'medicationRecord',
       name: '用药记录',
       completed: isCompleted,
     });
   }
 
   // 合并用药
-  if (reqs.requiresConcomitantMedication) {
-    const isCompleted = completed.some((r: any) => r.type === 'concomitant_medication');
+  if (reqs.requiresConcomitantMeds) {
+    const isCompleted = completed.some((r: any) => r.type === 'concomitantMedication');
     list.push({
-      type: 'concomitant_medication',
+      type: 'concomitantMedication',
       name: '合并用药',
       completed: isCompleted,
     });

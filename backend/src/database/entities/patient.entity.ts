@@ -118,6 +118,15 @@ export class Patient {
   })
   status: 'active' | 'completed' | 'withdrawn';
 
+  @Column({
+    type: 'boolean',
+    nullable: false,
+    default: false,
+    name: 'pending_review',
+    comment: '是否等待医生审核',
+  })
+  pendingReview: boolean;
+
   @CreateDateColumn({ name: 'created_at', comment: '创建时间' })
   createdAt: Date;
 

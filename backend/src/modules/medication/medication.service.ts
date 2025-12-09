@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, forwardRef, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like } from 'typeorm';
 import { MedicationRecord } from '../../database/entities/medication-record.entity';
@@ -11,6 +11,7 @@ import {
   UpdateConcomitantMedicationDto,
   QueryConcomitantMedicationDto,
 } from './dto/medication.dto';
+import { PatientService } from '../patient/patient.service';
 
 @Injectable()
 export class MedicationService {
@@ -19,6 +20,8 @@ export class MedicationService {
     private medicationRecordRepository: Repository<MedicationRecord>,
     @InjectRepository(ConcomitantMedication)
     private concomitantMedicationRepository: Repository<ConcomitantMedication>,
+    @Inject(forwardRef(() => PatientService))
+    private readonly patientService: PatientService,
   ) {}
 
   // ==================== 用药记录管理 ====================
@@ -30,7 +33,12 @@ export class MedicationService {
     createMedicationRecordDto: CreateMedicationRecordDto,
   ): Promise<MedicationRecord> {
     const record = this.medicationRecordRepository.create(createMedicationRecordDto);
-    return await this.medicationRecordRepository.save(record);
+    const savedRecord = await this.medicationRecordRepository.save(record);
+
+    // 检查并更新患者待审核状态
+    await this.patientService.updatePendingReviewStatus(createMedicationRecordDto.patientId);
+
+    return savedRecord;
   }
 
   /**
@@ -158,7 +166,12 @@ export class MedicationService {
     const record = this.concomitantMedicationRepository.create(
       createConcomitantMedicationDto,
     );
-    return await this.concomitantMedicationRepository.save(record);
+    const savedRecord = await this.concomitantMedicationRepository.save(record);
+
+    // 检查并更新患者待审核状态
+    await this.patientService.updatePendingReviewStatus(createConcomitantMedicationDto.patientId);
+
+    return savedRecord;
   }
 
   /**

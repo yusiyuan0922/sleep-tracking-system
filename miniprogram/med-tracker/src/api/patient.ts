@@ -57,6 +57,11 @@ export const patientAPI = {
   completeV4(id: number, data: any) {
     return post(`/patients/${id}/complete-v4`, data);
   },
+
+  // 患者提交当前阶段审核（只设置pendingReview，不推进阶段）
+  submitForReview(id: number) {
+    return post(`/patients/${id}/submit-for-review`);
+  },
 };
 
 export default patientAPI;

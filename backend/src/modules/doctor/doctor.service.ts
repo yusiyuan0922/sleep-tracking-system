@@ -23,6 +23,7 @@ import {
   QueryDoctorDto,
 } from './dto/doctor.dto';
 import { STAGE_REQUIREMENTS } from '../../../../shared/constants/stages';
+import { PushMessageService } from '../push-message/push-message.service';
 
 @Injectable()
 export class DoctorService {
@@ -45,6 +46,7 @@ export class DoctorService {
     private readonly medicationRecordRepository: Repository<MedicationRecord>,
     @InjectRepository(ConcomitantMedication)
     private readonly concomitantMedicationRepository: Repository<ConcomitantMedication>,
+    private readonly pushMessageService: PushMessageService,
   ) {}
 
   /**
@@ -244,7 +246,16 @@ export class DoctorService {
     doctor.auditedBy = adminUserId;
     doctor.auditedAt = new Date();
 
-    return await this.doctorRepository.save(doctor);
+    const savedDoctor = await this.doctorRepository.save(doctor);
+
+    // 发送审核结果通知
+    await this.pushMessageService.notifyDoctorAuditResult(
+      doctor.userId,
+      auditDoctorDto.auditStatus,
+      auditDoctorDto.auditRemark,
+    );
+
+    return savedDoctor;
   }
 
   /**
@@ -361,11 +372,13 @@ export class DoctorService {
 
         // 只有未完成的患者才需要检查待审核状态
         if (patient.currentStage !== 'completed') {
-          const checkResult = await this.checkStageRequirements(
+          // 检查患者是否完成了自己的部分（不包括医生代填项）
+          const patientCheckResult = await this.checkPatientPartRequirements(
             patient.id,
             patient.currentStage as 'V1' | 'V2' | 'V3' | 'V4',
           );
-          pendingReview = checkResult.canComplete;
+          // 患者完成自己部分后，即进入待审核状态
+          pendingReview = patientCheckResult.patientPartCompleted;
         }
 
         return {
@@ -385,7 +398,88 @@ export class DoctorService {
   }
 
   /**
-   * 检查阶段是否满足完成条件
+   * 检查患者部分的完成度（不包括医生代填项）
+   * 用于医生端判断患者是否进入待审核状态
+   */
+  private async checkPatientPartRequirements(
+    patientId: number,
+    stage: 'V1' | 'V2' | 'V3' | 'V4',
+  ) {
+    const requirements = STAGE_REQUIREMENTS[stage];
+    const missingRequirements: Array<{
+      type: string;
+      code?: string;
+      name?: string;
+      message?: string;
+    }> = [];
+
+    // 检查患者自填量表
+    for (const scaleCode of requirements.patientScales) {
+      const scaleConfig = await this.scaleConfigRepository.findOne({
+        where: { code: scaleCode as any },
+      });
+
+      if (!scaleConfig) {
+        missingRequirements.push({
+          type: 'scale',
+          code: scaleCode,
+          name: `${scaleCode}量表`,
+          message: '量表配置不存在',
+        });
+        continue;
+      }
+
+      const scaleRecord = await this.scaleRecordRepository.findOne({
+        where: { patientId, stage, scaleId: scaleConfig.id },
+      });
+
+      if (!scaleRecord) {
+        missingRequirements.push({
+          type: 'scale',
+          code: scaleCode,
+          name: `${scaleCode}量表`,
+        });
+      }
+    }
+
+    // 检查用药记录
+    if (requirements.requiresMedicationRecord) {
+      const medicationRecord =
+        await this.medicationRecordRepository.findOne({
+          where: { patientId, stage },
+        });
+
+      if (!medicationRecord) {
+        missingRequirements.push({
+          type: 'medicationRecord',
+          message: '需要填写用药记录',
+        });
+      }
+    }
+
+    // 检查合并用药
+    if (requirements.requiresConcomitantMeds) {
+      const concomitantMed =
+        await this.concomitantMedicationRepository.findOne({
+          where: { patientId, stage: stage as 'V2' | 'V3' | 'V4' },
+        });
+
+      if (!concomitantMed) {
+        missingRequirements.push({
+          type: 'concomitantMedication',
+          message: '需要填写合并用药记录',
+        });
+      }
+    }
+
+    return {
+      patientPartCompleted: missingRequirements.length === 0,
+      missingRequirements,
+    };
+  }
+
+  /**
+   * 检查阶段是否满足完成条件（包括所有项：患者+医生）
    */
   private async checkStageRequirements(
     patientId: number,

@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ScheduleModule } from '@nestjs/schedule';
 import { APP_GUARD } from '@nestjs/core';
 import { AuthModule } from './modules/auth/auth.module';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
@@ -19,6 +20,7 @@ import { AuditLogModule } from './modules/audit-log/audit-log.module';
 import { OperationLogModule } from './modules/operation-log/operation-log.module';
 import { PushMessageModule } from './modules/push-message/push-message.module';
 import { SystemConfigModule } from './modules/system-config/system-config.module';
+import { ScheduleTasksModule } from './modules/schedule/schedule.module';
 
 @Module({
   imports: [
@@ -40,6 +42,9 @@ import { SystemConfigModule } from './modules/system-config/system-config.module
       synchronize: process.env.NODE_ENV === 'development',
       logging: process.env.NODE_ENV === 'development',
     }),
+
+    // 定时任务配置
+    ScheduleModule.forRoot(),
 
     AuthModule,
 
@@ -72,6 +77,8 @@ import { SystemConfigModule } from './modules/system-config/system-config.module
     PushMessageModule,
 
     SystemConfigModule,
+
+    ScheduleTasksModule,
   ],
   controllers: [],
   providers: [

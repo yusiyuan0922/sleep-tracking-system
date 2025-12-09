@@ -1,0 +1,261 @@
+/**
+ * 全局样式变量定义
+ * 睡眠小程序统一设计规范
+ */
+
+// ============================================
+// 颜色系统 (Color System)
+// ============================================
+
+// 主色调 - 紫色渐变
+$color-primary: #667eea;
+$color-primary-dark: #764ba2;
+$color-primary-light: #8b9ff5;
+$color-primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+
+// 功能色
+$color-success: #52c41a;
+$color-success-light: #95de64;
+$color-success-bg: #f6ffed;
+
+$color-warning: #faad14;
+$color-warning-light: #ffd666;
+$color-warning-bg: #fff7e6;
+
+$color-danger: #ff4d4f;
+$color-danger-light: #ff7875;
+$color-danger-bg: #fff2f0;
+$color-danger-gradient: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+
+$color-info: #409EFF;
+$color-info-light: #91d5ff;
+$color-info-bg: #e6f7ff;
+
+// 中性色
+$color-text-primary: #333333;
+$color-text-secondary: #666666;
+$color-text-placeholder: #999999;
+$color-text-disabled: #c0c0c0;
+
+$color-border: #e8e8e8;
+$color-border-light: #f0f0f0;
+
+$color-bg-page: #f5f5f5;
+$color-bg-card: #ffffff;
+$color-bg-disabled: #f0f0f0;
+$color-bg-input: #f7f8fa;
+
+// ============================================
+// 字体系统 (Typography)
+// ============================================
+
+// 字体大小 - 6级规范
+$font-size-h1: 40rpx;      // 页面大标题
+$font-size-h2: 32rpx;      // 卡片标题
+$font-size-h3: 28rpx;      // 列表项标题
+$font-size-body: 26rpx;    // 正文内容
+$font-size-caption: 24rpx; // 辅助说明
+$font-size-small: 22rpx;   // 小字提示
+
+// 字重
+$font-weight-normal: 400;
+$font-weight-medium: 500;
+$font-weight-bold: 600;
+
+// 行高
+$line-height-tight: 1.3;
+$line-height-normal: 1.5;
+$line-height-loose: 1.8;
+
+// ============================================
+// 间距系统 (Spacing)
+// ============================================
+
+$spacing-xs: 10rpx;  // 元素内部间距
+$spacing-sm: 20rpx;  // 紧凑间距
+$spacing-md: 30rpx;  // 标准间距
+$spacing-lg: 40rpx;  // 宽松间距
+$spacing-xl: 60rpx;  // 区块间距
+
+// 页面边距
+$page-padding: 30rpx;
+$page-padding-bottom: 120rpx; // 预留底部安全区
+
+// ============================================
+// 圆角系统 (Border Radius)
+// ============================================
+
+$radius-xs: 8rpx;    // 小元素
+$radius-sm: 12rpx;   // 输入框、标签
+$radius-md: 16rpx;   // 中等卡片
+$radius-lg: 20rpx;   // 大卡片
+$radius-xl: 30rpx;   // 椭圆标签
+$radius-full: 50%;   // 圆形
+
+// 按钮圆角
+$radius-btn: 45rpx;
+$radius-btn-sm: 30rpx;
+
+// ============================================
+// 阴影系统 (Shadows)
+// ============================================
+
+$shadow-sm: 0 2rpx 8rpx rgba(0, 0, 0, 0.06);
+$shadow-md: 0 2rpx 12rpx rgba(0, 0, 0, 0.08);
+$shadow-lg: 0 4rpx 20rpx rgba(0, 0, 0, 0.1);
+
+// ============================================
+// 过渡动画 (Transitions)
+// ============================================
+
+$transition-fast: 0.15s ease;
+$transition-normal: 0.3s ease;
+$transition-slow: 0.5s ease;
+
+// ============================================
+// 组件尺寸 (Component Sizes)
+// ============================================
+
+// 按钮高度
+$btn-height-lg: 90rpx;
+$btn-height-md: 80rpx;
+$btn-height-sm: 60rpx;
+
+// 输入框高度
+$input-height: 88rpx;
+
+// 图标大小
+$icon-size-sm: 32rpx;
+$icon-size-md: 48rpx;
+$icon-size-lg: 64rpx;
+
+// ============================================
+// 通用 Mixins
+// ============================================
+
+// 卡片样式
+@mixin card {
+  background-color: $color-bg-card;
+  border-radius: $radius-lg;
+  padding: $spacing-md;
+  box-shadow: $shadow-md;
+}
+
+// 主按钮渐变
+@mixin btn-primary {
+  background: $color-primary-gradient;
+  color: #ffffff;
+  border-radius: $radius-btn;
+  height: $btn-height-md;
+  line-height: $btn-height-md;
+  font-size: $font-size-h3;
+  font-weight: $font-weight-medium;
+  border: none;
+
+  &:active {
+    opacity: 0.85;
+    transform: scale(0.98);
+  }
+
+  &[disabled] {
+    opacity: 0.5;
+    pointer-events: none;
+  }
+}
+
+// 次要按钮
+@mixin btn-secondary {
+  background-color: $color-bg-card;
+  color: $color-primary;
+  border: 2rpx solid $color-primary;
+  border-radius: $radius-btn;
+  height: $btn-height-md;
+  line-height: $btn-height-md - 4rpx;
+  font-size: $font-size-h3;
+
+  &:active {
+    background-color: rgba($color-primary, 0.1);
+  }
+}
+
+// 危险按钮
+@mixin btn-danger {
+  background: $color-danger-gradient;
+  color: #ffffff;
+  border-radius: $radius-btn;
+  height: $btn-height-md;
+  line-height: $btn-height-md;
+  font-size: $font-size-h3;
+  font-weight: $font-weight-medium;
+  border: none;
+
+  &:active {
+    opacity: 0.85;
+    transform: scale(0.98);
+  }
+}
+
+// 文字链接按钮
+@mixin btn-text {
+  background: transparent;
+  color: $color-primary;
+  font-size: $font-size-body;
+  padding: $spacing-xs $spacing-sm;
+
+  &:active {
+    opacity: 0.7;
+  }
+}
+
+// 点击反馈
+@mixin clickable {
+  transition: all $transition-fast;
+
+  &:active {
+    opacity: 0.8;
+    transform: scale(0.98);
+  }
+}
+
+// Flex 居中
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+// Flex 两端对齐
+@mixin flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+// 文本省略
+@mixin text-ellipsis($lines: 1) {
+  @if $lines == 1 {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  } @else {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: $lines;
+    overflow: hidden;
+  }
+}
+
+// 页面容器
+@mixin page-container {
+  min-height: 100vh;
+  background-color: $color-bg-page;
+  padding: $page-padding;
+  padding-bottom: $page-padding-bottom;
+  box-sizing: border-box;
+}
+
+// 安全区域底部
+@mixin safe-area-bottom {
+  padding-bottom: constant(safe-area-inset-bottom);
+  padding-bottom: env(safe-area-inset-bottom);
+}

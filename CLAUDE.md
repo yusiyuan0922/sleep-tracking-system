@@ -45,8 +45,32 @@ docker-compose restart backend
 ```
 
 ### Backend Development
+
+#### Quick Update After Code Changes (Recommended)
+When you modify backend TypeScript code, the fastest way to deploy changes:
+
 ```bash
-# PRODUCTION (Docker) - Primary deployment method
+# 1. Compile TypeScript to JavaScript
+cd backend
+npm run build
+
+# 2. Copy compiled code to running container
+docker cp dist/. sleep-backend:/app/backend/dist/
+
+# 3. Restart backend service
+docker-compose restart backend
+
+# Verify backend is running
+docker logs sleep-backend --tail 20
+```
+
+**Why this works:** The Docker container runs compiled JavaScript from the `dist` directory. Although source code is mounted via volumes, the container executes the pre-built code. This method updates only the compiled output without rebuilding the entire Docker image.
+
+#### Full Rebuild (For dependency changes)
+Use this when you modify `package.json` or need a clean build:
+
+```bash
+# PRODUCTION (Docker) - Full image rebuild
 docker-compose build backend
 docker-compose up -d backend
 
@@ -64,6 +88,8 @@ npm run test           # Run tests
 npm run test:watch     # Watch mode
 npm run test:cov       # With coverage
 ```
+
+**Note:** Full rebuild may fail if Docker cannot pull base images due to network issues. In that case, use the quick update method above.
 
 ### Database Initialization
 ```bash
@@ -171,9 +197,11 @@ Defined in `shared/constants/stages.ts`:
 ### Stage Requirements
 Each stage has specific requirements (from `STAGE_REQUIREMENTS`):
 - **V1**: All 6 scales (AIS, ESS, GAD7, PHQ9, HAMA, HAMD) + medical files + medication record
-- **V2**: 4 scales (AIS, ESS, GAD7, PHQ9) + medication record + concomitant meds
-- **V3**: All 6 scales + medical files + medication record
-- **V4**: 4 scales + concomitant meds
+- **V2**: 4 scales (AIS, ESS, GAD7, PHQ9) + medication record
+- **V3**: All 6 scales (AIS, ESS, GAD7, PHQ9, HAMA, HAMD) + medical files + medication record
+- **V4**: 4 scales (AIS, ESS, GAD7, PHQ9)
+
+**Note**: Concomitant medication (合并用药) is optional and can be filled multiple times at any stage. It does NOT affect stage progression.
 
 ### Patient Entity Stage Tracking
 The `Patient` entity stores:

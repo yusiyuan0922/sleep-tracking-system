@@ -3,6 +3,8 @@ import {
   NotFoundException,
   ConflictException,
   BadRequestException,
+  forwardRef,
+  Inject,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -15,6 +17,7 @@ import {
   SubmitScaleRecordDto,
   QueryScaleRecordDto,
 } from './dto/scale.dto';
+import { PatientService } from '../patient/patient.service';
 
 @Injectable()
 export class ScaleService {
@@ -25,6 +28,8 @@ export class ScaleService {
     private readonly scaleRecordRepository: Repository<ScaleRecord>,
     @InjectRepository(Patient)
     private readonly patientRepository: Repository<Patient>,
+    @Inject(forwardRef(() => PatientService))
+    private readonly patientService: PatientService,
   ) {}
 
   /**
@@ -186,7 +191,12 @@ export class ScaleService {
       description,
     });
 
-    return await this.scaleRecordRepository.save(record);
+    const savedRecord = await this.scaleRecordRepository.save(record);
+
+    // 检查并更新患者待审核状态
+    await this.patientService.updatePendingReviewStatus(patientId);
+
+    return savedRecord;
   }
 
   /**

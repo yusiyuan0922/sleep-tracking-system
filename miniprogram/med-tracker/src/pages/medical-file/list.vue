@@ -61,6 +61,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
+import { onShow } from '@dcloudio/uni-app';
 import { medicalFileAPI } from '../../api/medical-file';
 import { patientAPI } from '../../api/patient';
 
@@ -112,7 +113,8 @@ const loadFiles = async () => {
       patientId: patient.id,
     });
 
-    files.value = result.items || result || [];
+    // API 返回 { data: files, total, page, pageSize, totalPages }
+    files.value = result.data || result.items || result || [];
   } catch (error: any) {
     uni.showToast({
       title: '加载失败',

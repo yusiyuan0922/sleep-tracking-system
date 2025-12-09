@@ -7,8 +7,9 @@ import {
   IsNotEmpty,
   IsDateString,
   Length,
+  ValidateIf,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 
 // 患者注册DTO
 export class RegisterPatientDto {
@@ -118,39 +119,69 @@ export class UpdatePatientStatusDto {
 
 // 完成V1阶段DTO
 export class CompleteV1Dto {
-  @ApiProperty({ description: 'V2窗口开始日期', example: '2024-01-15' })
+  @ApiProperty({ description: 'V2窗口开始日期', example: '2024-01-15', required: false })
+  @ValidateIf((o) => o.v2WindowStart !== undefined && o.v2WindowStart !== null && o.v2WindowStart !== '')
   @IsDateString()
-  @IsNotEmpty()
-  v2WindowStart: string;
+  v2WindowStart?: string;
 
-  @ApiProperty({ description: 'V2窗口结束日期', example: '2024-01-25' })
+  @ApiProperty({ description: 'V2窗口结束日期', example: '2024-01-25', required: false })
+  @ValidateIf((o) => o.v2WindowEnd !== undefined && o.v2WindowEnd !== null && o.v2WindowEnd !== '')
   @IsDateString()
-  @IsNotEmpty()
-  v2WindowEnd: string;
+  v2WindowEnd?: string;
+
+  @ApiProperty({ description: '审核决策', enum: ['approved', 'rejected'], required: false })
+  @IsOptional()
+  @IsEnum(['approved', 'rejected'])
+  reviewDecision?: 'approved' | 'rejected';
+
+  @ApiProperty({ description: '审核意见', required: false })
+  @IsOptional()
+  @IsString()
+  reviewNotes?: string;
 }
 
 // 完成V2阶段DTO
 export class CompleteV2Dto {
-  @ApiProperty({ description: 'V3窗口开始日期', example: '2024-02-15' })
+  @ApiProperty({ description: 'V3窗口开始日期', example: '2024-02-15', required: false })
+  @ValidateIf((o) => o.v3WindowStart !== undefined && o.v3WindowStart !== null && o.v3WindowStart !== '')
   @IsDateString()
-  @IsNotEmpty()
-  v3WindowStart: string;
+  v3WindowStart?: string;
 
-  @ApiProperty({ description: 'V3窗口结束日期', example: '2024-02-25' })
+  @ApiProperty({ description: 'V3窗口结束日期', example: '2024-02-25', required: false })
+  @ValidateIf((o) => o.v3WindowEnd !== undefined && o.v3WindowEnd !== null && o.v3WindowEnd !== '')
   @IsDateString()
-  @IsNotEmpty()
-  v3WindowEnd: string;
+  v3WindowEnd?: string;
+
+  @ApiProperty({ description: '审核决策', enum: ['approved', 'rejected'], required: false })
+  @IsOptional()
+  @IsEnum(['approved', 'rejected'])
+  reviewDecision?: 'approved' | 'rejected';
+
+  @ApiProperty({ description: '审核意见', required: false })
+  @IsOptional()
+  @IsString()
+  reviewNotes?: string;
 }
 
 // 完成V3阶段DTO
 export class CompleteV3Dto {
-  @ApiProperty({ description: 'V4窗口开始日期', example: '2024-03-15' })
+  @ApiProperty({ description: 'V4窗口开始日期', example: '2024-03-15', required: false })
+  @ValidateIf((o) => o.v4WindowStart !== undefined && o.v4WindowStart !== null && o.v4WindowStart !== '')
   @IsDateString()
-  @IsNotEmpty()
-  v4WindowStart: string;
+  v4WindowStart?: string;
 
-  @ApiProperty({ description: 'V4窗口结束日期', example: '2024-03-25' })
+  @ApiProperty({ description: 'V4窗口结束日期', example: '2024-03-25', required: false })
+  @ValidateIf((o) => o.v4WindowEnd !== undefined && o.v4WindowEnd !== null && o.v4WindowEnd !== '')
   @IsDateString()
-  @IsNotEmpty()
-  v4WindowEnd: string;
+  v4WindowEnd?: string;
+
+  @ApiProperty({ description: '审核决策', enum: ['approved', 'rejected'], required: false })
+  @IsOptional()
+  @IsEnum(['approved', 'rejected'])
+  reviewDecision?: 'approved' | 'rejected';
+
+  @ApiProperty({ description: '审核意见', required: false })
+  @IsOptional()
+  @IsString()
+  reviewNotes?: string;
 }

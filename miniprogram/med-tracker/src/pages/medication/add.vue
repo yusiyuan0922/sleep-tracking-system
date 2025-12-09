@@ -387,6 +387,7 @@ const handleSubmit = async () => {
       // 莱博雷生用药记录：只有剂量来自用户输入，其他全部使用默认值
       submitData = {
         patientId,
+        stage: patient.currentStage,                    // 添加：当前阶段
         drugName: DEFAULT_RECORD_VALUES.drugName,       // 固定：莱博雷生
         specification: DEFAULT_RECORD_VALUES.specification,  // 固定：片剂
         dosage: parseFloat(formData.value.dosage),      // ⭐ 用户选择：5 或 10
@@ -405,6 +406,7 @@ const handleSubmit = async () => {
       // 合并用药：使用表单填写的值
       submitData = {
         patientId,
+        stage: patient.currentStage,                    // 添加：当前阶段
         drugName: formData.value.drugName.trim(),
         specification: formData.value.dosageForm, // 使用剂型作为规格
         dosage: parseFloat(formData.value.dosage),

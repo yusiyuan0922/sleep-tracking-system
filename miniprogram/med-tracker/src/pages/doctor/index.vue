@@ -1,22 +1,9 @@
 <template>
   <view class="doctor-home-container">
-    <!-- 顶部导航栏 -->
-    <DoctorNav current="patients" />
-
-    <!-- 顶部统计卡片 -->
-    <view class="stats-section">
-      <view class="stat-card">
-        <text class="stat-value">{{ stats.totalPatients }}</text>
-        <text class="stat-label">我的患者</text>
-      </view>
-      <view class="stat-card">
-        <text class="stat-value">{{ stats.pendingReview }}</text>
-        <text class="stat-label">待审核</text>
-      </view>
-      <view class="stat-card">
-        <text class="stat-value">{{ stats.activePatients }}</text>
-        <text class="stat-label">进行中</text>
-      </view>
+    <!-- 页面标题 -->
+    <view class="page-header">
+      <text class="page-title">患者管理</text>
+      <text class="patient-count">共 {{ stats.totalPatients }} 位患者</text>
     </view>
 
     <!-- 搜索和筛选 -->
@@ -90,6 +77,9 @@
         <text>加载中...</text>
       </view>
     </view>
+
+    <!-- 底部 tabbar -->
+    <DoctorTabbar current="patients" />
   </view>
 </template>
 
@@ -97,7 +87,7 @@
 import { ref, computed } from 'vue';
 import { onShow } from '@dcloudio/uni-app';
 import { doctorAPI } from '../../api/doctor';
-import DoctorNav from '../../components/doctor-nav/index.vue';
+import DoctorTabbar from '../../components/doctor-tabbar/index.vue';
 
 const loading = ref(false);
 const patients = ref<any[]>([]);
@@ -203,38 +193,27 @@ onShow(() => {
 .doctor-home-container {
   min-height: 100vh;
   background-color: #f5f5f5;
-  padding-bottom: 30rpx;
-  padding-top: calc(var(--status-bar-height, 44px) + 100rpx);
+  padding-bottom: 120rpx;
 }
 
-/* 统计卡片 */
-.stats-section {
+/* 页面标题 */
+.page-header {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   padding: 40rpx 30rpx;
   display: flex;
-  gap: 20rpx;
-}
-
-.stat-card {
-  flex: 1;
-  background-color: rgba(255, 255, 255, 0.2);
-  border-radius: 20rpx;
-  padding: 30rpx 20rpx;
-  display: flex;
-  flex-direction: column;
+  justify-content: space-between;
   align-items: center;
-  gap: 10rpx;
 }
 
-.stat-value {
-  font-size: 48rpx;
+.page-title {
+  font-size: 36rpx;
   font-weight: bold;
   color: #ffffff;
 }
 
-.stat-label {
-  font-size: 24rpx;
-  color: rgba(255, 255, 255, 0.9);
+.patient-count {
+  font-size: 26rpx;
+  color: rgba(255, 255, 255, 0.8);
 }
 
 /* 搜索和筛选 */

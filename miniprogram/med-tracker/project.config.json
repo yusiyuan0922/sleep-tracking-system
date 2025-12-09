@@ -16,7 +16,16 @@
     "minifyWXML": false,
     "urlCheck": false,
     "ignoreDevUnusedFiles": false,
-    "ignoreUploadUnusedFiles": false
+    "ignoreUploadUnusedFiles": false,
+    "compileWorklet": false,
+    "uploadWithSourceMap": true,
+    "packNpmManually": false,
+    "minifyWXSS": true,
+    "localPlugins": false,
+    "disableUseStrict": false,
+    "condition": false,
+    "swc": false,
+    "disableSWC": true
   },
   "compileType": "miniprogram",
   "simulatorPluginLibVersion": {},
@@ -31,5 +40,6 @@
     "tabIndent": "insertSpaces",
     "tabSize": 2
   },
-  "condition": {}
+  "condition": {},
+  "libVersion": "3.12.0"
 }

@@ -155,6 +155,9 @@
       <button class="action-btn primary" @click="goToFillScale">
         代填量表
       </button>
+      <button class="action-btn secondary" @click="goToUploadFile">
+        上传病历文件
+      </button>
       <button v-if="canReview" class="action-btn success" @click="handleReview">
         审核{{ patientInfo.currentStage }}阶段
       </button>
@@ -164,7 +167,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { onLoad } from '@dcloudio/uni-app';
+import { onLoad, onShow } from '@dcloudio/uni-app';
 import { patientAPI } from '../../api/patient';
 import { scaleAPI } from '../../api/scale';
 import { medicationAPI } from '../../api/medication';
@@ -176,6 +179,7 @@ const currentTab = ref('info');
 const scaleRecords = ref<any[]>([]);
 const medications = ref<any[]>([]);
 const adverseEvents = ref<any[]>([]);
+const completedDoctorScales = ref<string[]>([]); // 当前阶段已完成的医生量表
 
 const tabs = [
   { value: 'info', label: '基本信息' },
@@ -226,11 +230,33 @@ const loadPatientInfo = async () => {
   try {
     const result = await patientAPI.getDetail(patientId.value);
     patientInfo.value = result;
+    // 加载已完成的医生量表
+    await loadCompletedDoctorScales();
   } catch (error: any) {
     uni.showToast({
       title: '加载失败',
       icon: 'none',
     });
+  }
+};
+
+// 加载当前阶段已完成的医生量表
+const loadCompletedDoctorScales = async () => {
+  try {
+    const stage = patientInfo.value.currentStage;
+    if (!stage || (stage !== 'V1' && stage !== 'V3')) {
+      completedDoctorScales.value = [];
+      return;
+    }
+
+    const records = await scaleAPI.getPatientStageRecords(patientId.value, stage);
+    const completed = (records || [])
+      .map((r: any) => r.scale?.code || r.scaleCode)
+      .filter((code: string) => code === 'HAMA' || code === 'HAMD');
+    completedDoctorScales.value = completed;
+  } catch (error) {
+    console.error('加载已完成医生量表失败:', error);
+    completedDoctorScales.value = [];
   }
 };
 
@@ -286,14 +312,44 @@ const changeTab = (tab: string) => {
 
 // 代填量表
 const goToFillScale = () => {
+  const stage = patientInfo.value.currentStage;
+
+  // 检查是否是需要医生代填量表的阶段
+  if (stage !== 'V1' && stage !== 'V3') {
+    uni.showToast({ title: '当前阶段不需要医生代填量表', icon: 'none' });
+    return;
+  }
+
+  // 构建可选量表列表（排除已完成的）
+  const allScales = [
+    { code: 'HAMA', name: 'HAMA量表' },
+    { code: 'HAMD', name: 'HAMD量表' },
+  ];
+
+  const availableScales = allScales.filter(
+    s => !completedDoctorScales.value.includes(s.code)
+  );
+
+  if (availableScales.length === 0) {
+    uni.showToast({ title: '医生量表已全部完成', icon: 'none' });
+    return;
+  }
+
   uni.showActionSheet({
-    itemList: ['HAMA量表', 'HAMD量表'],
+    itemList: availableScales.map(s => s.name),
     success: (res) => {
-      const scaleCode = res.tapIndex === 0 ? 'HAMA' : 'HAMD';
+      const selectedScale = availableScales[res.tapIndex];
       uni.navigateTo({
-        url: `/pages/doctor/fill-scale?patientId=${patientId.value}&scaleCode=${scaleCode}&stage=${patientInfo.value.currentStage}`,
+        url: `/pages/doctor/fill-scale?patientId=${patientId.value}&scaleCode=${selectedScale.code}&stage=${stage}`,
       });
     },
+  });
+};
+
+// 上传病历文件
+const goToUploadFile = () => {
+  uni.navigateTo({
+    url: `/pages/medical-file/upload?patientId=${patientId.value}&stage=${patientInfo.value.currentStage}`,
   });
 };
 
@@ -307,6 +363,13 @@ const handleReview = () => {
 onLoad((options: any) => {
   patientId.value = parseInt(options.id);
   loadPatientInfo();
+});
+
+// 页面显示时刷新已完成量表状态（从填写页面返回时）
+onShow(() => {
+  if (patientId.value && patientInfo.value.currentStage) {
+    loadCompletedDoctorScales();
+  }
 });
 </script>
 
@@ -643,6 +706,11 @@ onLoad((options: any) => {
 
 .action-btn.primary {
   background-color: #667eea;
+  color: #ffffff;
+}
+
+.action-btn.secondary {
+  background-color: #fa8c16;
   color: #ffffff;
 }
 

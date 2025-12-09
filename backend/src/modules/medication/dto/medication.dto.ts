@@ -18,6 +18,11 @@ export class CreateMedicationRecordDto {
   @IsNotEmpty()
   patientId: number;
 
+  @ApiProperty({ description: '阶段', enum: ['V1', 'V2', 'V3', 'V4'] })
+  @IsEnum(['V1', 'V2', 'V3', 'V4'])
+  @IsNotEmpty()
+  stage: 'V1' | 'V2' | 'V3' | 'V4';
+
   @ApiProperty({ description: '药品通用名' })
   @IsString()
   @IsNotEmpty()
@@ -117,10 +122,10 @@ export class CreateConcomitantMedicationDto {
   @IsNotEmpty()
   patientId: number;
 
-  @ApiPropertyOptional({ description: '阶段（可选）', enum: ['V1', 'V2', 'V3', 'V4'] })
-  @IsEnum(['V1', 'V2', 'V3', 'V4'])
-  @IsOptional()
-  stage?: 'V1' | 'V2' | 'V3' | 'V4';
+  @ApiProperty({ description: '阶段', enum: ['V2', 'V3', 'V4'] })
+  @IsEnum(['V2', 'V3', 'V4'])
+  @IsNotEmpty()
+  stage: 'V2' | 'V3' | 'V4';
 
   @ApiProperty({ description: '药品名称' })
   @IsString()

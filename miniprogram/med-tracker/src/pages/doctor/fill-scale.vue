@@ -72,7 +72,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
 import { scaleAPI } from '../../api/scale';
 import { patientAPI } from '../../api/patient';
@@ -101,7 +101,7 @@ const progressPercent = computed(() => {
 
 // 是否全部回答
 const isAllAnswered = computed(() => {
-  return answers.value.every(a => a !== null);
+  return answers.value.every(a => a !== null && a !== undefined);
 });
 
 // 加载量表题目
@@ -124,9 +124,10 @@ const loadScale = async () => {
 const loadPatientInfo = async () => {
   try {
     const result = await patientAPI.getDetail(patientId.value);
-    patientName.value = result.name;
+    patientName.value = result.user?.name || '患者';
   } catch (error: any) {
     console.error('加载患者信息失败:', error);
+    patientName.value = '患者';
   }
 };
 

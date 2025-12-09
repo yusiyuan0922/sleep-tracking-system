@@ -1,7 +1,5 @@
 <template>
   <view class="doctor-profile-container">
-    <!-- 顶部导航栏 -->
-    <DoctorNav current="profile" />
 
     <!-- 医生信息卡片 -->
     <view class="profile-header">
@@ -60,6 +58,9 @@
     <view class="logout-section">
       <button class="logout-btn" @click="handleLogout">退出登录</button>
     </view>
+
+    <!-- 底部 tabbar -->
+    <DoctorTabbar current="profile" />
   </view>
 </template>
 
@@ -68,7 +69,7 @@ import { ref } from 'vue';
 import { onShow } from '@dcloudio/uni-app';
 import { doctorAPI } from '../../api/doctor';
 import { config } from '../../config';
-import DoctorNav from '../../components/doctor-nav/index.vue';
+import DoctorTabbar from '../../components/doctor-tabbar/index.vue';
 
 const doctorInfo = ref<any>({});
 const stats = ref({
@@ -145,8 +146,7 @@ onShow(() => {
 .doctor-profile-container {
   min-height: 100vh;
   background-color: #f5f5f5;
-  padding-bottom: 30rpx;
-  padding-top: calc(var(--status-bar-height, 44px) + 100rpx);
+  padding-bottom: 120rpx;
 }
 
 /* 顶部信息 */

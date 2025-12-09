@@ -25,8 +25,8 @@ export class MedicalFileController {
   constructor(private readonly medicalFileService: MedicalFileService) {}
 
   @Post()
-  @Roles('doctor', 'patient')
-  @ApiOperation({ summary: '上传病历文件' })
+  @Roles('doctor')
+  @ApiOperation({ summary: '上传病历文件（仅医生可操作）' })
   async createMedicalFile(@Body() createDto: CreateMedicalFileDto) {
     return this.medicalFileService.createMedicalFile(createDto);
   }

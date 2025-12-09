@@ -153,15 +153,16 @@ const onStageChange = (e: any) => {
 
 // 查看详情
 const viewDetail = (record: any) => {
-  const scaleName = record.scale?.name || record.scale?.code || '未知';
-  const scaleCode = record.scale?.code || '';
-  const assessmentType = record.scale?.type === 'doctor' ? '医生代填' : '患者自填';
-
-  uni.showModal({
-    title: `${scaleName} (${scaleCode})`,
-    content: `阶段: ${record.stage}\n得分: ${record.totalScore}\n时间: ${formatTime(record.createdAt)}\n评估方式: ${assessmentType}`,
-    showCancel: false,
-  });
+  if (record.id) {
+    uni.navigateTo({
+      url: `/pages/scale/detail?id=${record.id}`,
+    });
+  } else {
+    uni.showToast({
+      title: '无法查看详情',
+      icon: 'none',
+    });
+  }
 };
 
 // 格式化时间

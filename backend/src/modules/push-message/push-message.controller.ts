@@ -39,10 +39,10 @@ export class PushMessageController {
   @ApiOperation({ summary: '获取我的消息列表' })
   async getMyMessages(
     @CurrentUser() user: any,
-    @Query('page', ParseIntPipe) page: number = 1,
-    @Query('pageSize', ParseIntPipe) pageSize: number = 10,
+    @Query() query: QueryPushMessageDto,
   ) {
-    return this.pushMessageService.findByUser(user.userId, page, pageSize);
+    const { page = 1, pageSize = 10, type, isRead } = query;
+    return this.pushMessageService.findByUser(user.userId, page, pageSize, type, isRead);
   }
 
   @Get('unread-count')

@@ -17,30 +17,50 @@ export const STAGE_CONFIG = {
 
 /**
  * 各阶段必填项配置
+ * 区分患者自填项和医生代填项
  */
 export const STAGE_REQUIREMENTS = {
   V1: {
-    requiredScales: ['AIS', 'ESS', 'GAD7', 'PHQ9', 'HAMA', 'HAMD'],
-    requiresMedicalFiles: true,
+    // 患者必填项
+    patientScales: ['AIS', 'ESS', 'GAD7', 'PHQ9'], // 患者自填量表
     requiresMedicationRecord: true,
     requiresConcomitantMeds: false,
+
+    // 医生必填项（审核时完成）
+    doctorScales: ['HAMA', 'HAMD'], // 医生代填量表
+    requiresMedicalFiles: true, // 医生上传病历
+
+    // 兼容旧代码：所有量表列表
+    requiredScales: ['AIS', 'ESS', 'GAD7', 'PHQ9', 'HAMA', 'HAMD'],
   },
   V2: {
-    requiredScales: ['AIS', 'ESS', 'GAD7', 'PHQ9'],
-    requiresMedicalFiles: false,
+    patientScales: ['AIS', 'ESS', 'GAD7', 'PHQ9'],
     requiresMedicationRecord: true,
     requiresConcomitantMeds: true,
+
+    doctorScales: [],
+    requiresMedicalFiles: false,
+
+    requiredScales: ['AIS', 'ESS', 'GAD7', 'PHQ9'],
   },
   V3: {
-    requiredScales: ['AIS', 'ESS', 'GAD7', 'PHQ9', 'HAMA', 'HAMD'],
-    requiresMedicalFiles: true,
+    patientScales: ['AIS', 'ESS', 'GAD7', 'PHQ9'],
     requiresMedicationRecord: true,
     requiresConcomitantMeds: false,
+
+    doctorScales: ['HAMA', 'HAMD'],
+    requiresMedicalFiles: true,
+
+    requiredScales: ['AIS', 'ESS', 'GAD7', 'PHQ9', 'HAMA', 'HAMD'],
   },
   V4: {
-    requiredScales: ['AIS', 'ESS', 'GAD7', 'PHQ9'],
-    requiresMedicalFiles: false,
+    patientScales: ['AIS', 'ESS', 'GAD7', 'PHQ9'],
     requiresMedicationRecord: false,
     requiresConcomitantMeds: true,
+
+    doctorScales: [],
+    requiresMedicalFiles: false,
+
+    requiredScales: ['AIS', 'ESS', 'GAD7', 'PHQ9'],
   },
 };

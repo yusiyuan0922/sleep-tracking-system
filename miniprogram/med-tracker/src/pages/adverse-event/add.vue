@@ -41,6 +41,24 @@
       </view>
 
       <view class="form-item">
+        <text class="label">严重程度 <text class="required">*</text></text>
+        <radio-group class="radio-group" @change="onSeverityChange">
+          <label class="radio-label">
+            <radio value="mild" :checked="formData.severity === 'mild'" color="#52c41a" />
+            <text>轻度</text>
+          </label>
+          <label class="radio-label">
+            <radio value="moderate" :checked="formData.severity === 'moderate'" color="#faad14" />
+            <text>中度</text>
+          </label>
+          <label class="radio-label">
+            <radio value="severe" :checked="formData.severity === 'severe'" color="#ff4d4f" />
+            <text>重度</text>
+          </label>
+        </radio-group>
+      </view>
+
+      <view class="form-item">
         <text class="label">是否持续 <text class="required">*</text></text>
         <radio-group class="radio-group" @change="onOngoingChange">
           <label class="radio-label">
@@ -104,6 +122,7 @@ const formData = ref({
   eventName: '',
   occurredDate: '',
   occurredTime: '',
+  severity: 'mild' as 'mild' | 'moderate' | 'severe',
   isOngoing: false,
   endDate: '',
   endTime: '',
@@ -117,6 +136,11 @@ const onOccurredDateChange = (e: any) => {
 // 发生时间改变
 const onOccurredTimeChange = (e: any) => {
   formData.value.occurredTime = e.detail.value;
+};
+
+// 严重程度改变
+const onSeverityChange = (e: any) => {
+  formData.value.severity = e.detail.value;
 };
 
 // 是否持续改变
@@ -182,8 +206,8 @@ const handleSubmit = async () => {
     await adverseEventAPI.create({
       patientId: Number(patient.id), // 确保转换为数字
       eventName: formData.value.eventName,
-      severity: 'mild', // 默认轻度
-      isSerious: false, // 默认非严重
+      severity: formData.value.severity,
+      isSerious: formData.value.severity === 'severe', // 重度自动标记为严重不良事件
       onsetDate,
       isOngoing: formData.value.isOngoing,
       endDate,

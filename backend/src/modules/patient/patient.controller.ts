@@ -134,4 +134,11 @@ export class PatientController {
   async completeV4(@Param('id', ParseIntPipe) id: number) {
     return this.patientService.completeV4(id);
   }
+
+  @Post(':id/submit-for-review')
+  @Roles('patient')
+  @ApiOperation({ summary: '患者提交当前阶段资料进行审核' })
+  async submitForReview(@Param('id', ParseIntPipe) id: number) {
+    return this.patientService.submitForReview(id);
+  }
 }

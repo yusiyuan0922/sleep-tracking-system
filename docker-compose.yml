@@ -82,6 +82,11 @@ services:
       MINIO_BUCKET: sleep-tracking
       MINIO_PUBLIC_ENDPOINT: http://localhost:9000
       CORS_ORIGIN: "*"
+    volumes:
+      - ./backend/src:/app/backend/src
+      - ./backend/dist:/app/backend/dist
+      - ./shared:/app/shared
+      - ./node_modules:/app/node_modules
     depends_on:
       postgres:
         condition: service_healthy

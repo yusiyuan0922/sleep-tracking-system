@@ -89,7 +89,7 @@ const handleBind = async () => {
         setTimeout(() => {
           console.log('准备跳转到医生端首页');
           uni.reLaunch({
-            url: '/pages/doctor/index',
+            url: '/pages/doctor/home',
           });
         }, 1500);
       } else {

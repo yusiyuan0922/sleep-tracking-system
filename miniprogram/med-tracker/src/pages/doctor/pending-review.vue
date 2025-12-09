@@ -1,8 +1,5 @@
 <template>
   <view class="pending-review-container">
-    <!-- 顶部导航栏 -->
-    <DoctorNav current="review" />
-
     <!-- 顶部统计 -->
     <view class="stats-card">
       <view class="stat-item">
@@ -56,6 +53,9 @@
         <text>加载中...</text>
       </view>
     </view>
+
+    <!-- 底部 tabbar -->
+    <DoctorTabbar current="home" />
   </view>
 </template>
 
@@ -63,7 +63,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { onShow } from '@dcloudio/uni-app';
 import { doctorAPI } from '../../api/doctor';
-import DoctorNav from '../../components/doctor-nav/index.vue';
+import DoctorTabbar from '../../components/doctor-tabbar/index.vue';
 
 const loading = ref(false);
 const patients = ref<any[]>([]);
@@ -118,8 +118,7 @@ onShow(() => {
 .pending-review-container {
   min-height: 100vh;
   background-color: #f5f5f5;
-  padding-bottom: 30rpx;
-  padding-top: calc(var(--status-bar-height, 44px) + 100rpx);
+  padding-bottom: 120rpx;
 }
 
 /* 统计卡片 */

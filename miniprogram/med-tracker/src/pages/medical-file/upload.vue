@@ -1,283 +1,319 @@
 <template>
   <view class="medical-file-upload-container">
+    <!-- 已上传的文件列表 -->
+    <view class="uploaded-section" v-if="uploadedFiles.length > 0">
+      <view class="section-header">
+        <text class="section-title">已上传的病历图片 ({{ uploadedFiles.length }}张)</text>
+      </view>
+      <view class="uploaded-files">
+        <view class="uploaded-item" v-for="file in uploadedFiles" :key="file.id">
+          <image
+            :src="file.fileUrl"
+            mode="aspectFill"
+            class="uploaded-image"
+            @click="previewImage(file.fileUrl)"
+          />
+          <view class="file-info">
+            <text class="file-name">{{ file.fileName }}</text>
+            <text class="file-date">{{ formatDate(file.createdAt) }}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
     <view class="form-container">
       <view class="form-item">
-        <text class="label">文件名称 <text class="required">*</text></text>
-        <input
-          class="input"
-          v-model="formData.fileName"
-          placeholder="请输入文件名称"
-          placeholder-class="placeholder"
-        />
-      </view>
-
-      <view class="form-item">
-        <text class="label">文件分类 <text class="required">*</text></text>
-        <picker
-          mode="selector"
-          :range="categories"
-          :value="categoryIndex"
-          @change="onCategoryChange"
-        >
-          <view class="picker">
-            <text v-if="formData.category">{{ formData.category }}</text>
-            <text v-else class="placeholder">请选择文件分类</text>
-          </view>
-        </picker>
-      </view>
-
-      <view class="form-item">
-        <text class="label">所属阶段 <text class="required">*</text></text>
-        <picker
-          mode="selector"
-          :range="stages"
-          :value="stageIndex"
-          @change="onStageChange"
-        >
-          <view class="picker">
-            <text v-if="formData.stage">{{ formData.stage }}</text>
-            <text v-else class="placeholder">请选择阶段</text>
-          </view>
-        </picker>
-      </view>
-
-      <view class="form-item">
-        <text class="label">文件描述</text>
-        <textarea
-          class="textarea"
-          v-model="formData.description"
-          placeholder="请输入文件描述信息"
-          placeholder-class="placeholder"
-          maxlength="500"
-        />
-      </view>
-
-      <view class="form-item">
-        <text class="label">选择文件 <text class="required">*</text></text>
+        <text class="label">上传病例图片 <text class="required">*</text></text>
         <view class="file-upload-section">
-          <view v-if="selectedFile" class="selected-file">
-            <view class="file-preview">
-              <image v-if="isImage" :src="selectedFile.path" mode="aspectFit" class="preview-image" />
-              <view v-else class="file-placeholder">
-                <text class="file-icon">{{ getFileIcon(selectedFile.type) }}</text>
-                <text class="file-size">{{ formatFileSize(selectedFile.size) }}</text>
+          <view class="selected-files" v-if="selectedFiles.length > 0">
+            <view class="file-item" v-for="(file, index) in selectedFiles" :key="index">
+              <view class="file-preview">
+                <image :src="file.path" mode="aspectFill" class="preview-image" />
+                <view class="remove-btn" @click="removeFile(index)">×</view>
               </view>
             </view>
-            <text class="file-name">{{ selectedFile.name }}</text>
-            <button class="change-file-btn" @click="selectFile">更换文件</button>
+            <button class="add-more-btn" @click="selectFile" v-if="selectedFiles.length < 9">
+              <text class="add-icon">+</text>
+            </button>
           </view>
           <button v-else class="select-file-btn" @click="selectFile">
-            <text class="select-icon">📁</text>
-            <text>选择文件</text>
+            <text class="select-icon">📷</text>
+            <text>选择图片</text>
           </button>
         </view>
         <view class="upload-tips">
-          <text>支持图片、PDF、Word、Excel等格式</text>
-          <text>文件大小不超过10MB</text>
+          <text>支持JPG、PNG等图片格式，最多9张</text>
+          <text>单个文件大小不超过10MB</text>
         </view>
       </view>
 
-      <button class="submit-btn" @click="handleSubmit" :loading="submitting" :disabled="!selectedFile">
-        上传
+      <button class="submit-btn" @click="handleSubmit" :loading="submitting" :disabled="selectedFiles.length === 0">
+        上传 {{ selectedFiles.length > 0 ? `(${selectedFiles.length}张)` : '' }}
       </button>
     </view>
   </view>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref } from 'vue';
+import { onLoad, onShow } from '@dcloudio/uni-app';
 import { medicalFileAPI } from '../../api/medical-file';
 import { patientAPI } from '../../api/patient';
+import { config } from '../../config';
 
 const submitting = ref(false);
 
-const categories = ['入组资料', '知情同意书', '检查报告', '病历记录', '其他'];
-const categoryIndex = ref(0);
+// 从URL参数获取患者ID和阶段(医生代患者上传时使用)
+const urlPatientId = ref<number | null>(null);
+const urlStage = ref<string | null>(null);
 
-const stages = ['V1', 'V2', 'V3', 'V4'];
-const stageIndex = ref(0);
+const selectedFiles = ref<any[]>([]);
+const uploadedFiles = ref<any[]>([]);
+const loading = ref(false);
 
-const selectedFile = ref<any>(null);
+// 选择图片文件
+const selectFile = () => {
+  console.log('selectFile 被调用');
+  const maxCount = 9 - selectedFiles.value.length;
 
-const formData = ref({
-  fileName: '',
-  category: '入组资料',
-  stage: 'V1',
-  description: '',
-});
+  uni.chooseImage({
+    count: maxCount,
+    sizeType: ['compressed'],
+    sourceType: ['album', 'camera'],
+    success: (res) => {
+      console.log('uni.chooseImage 成功:', res);
 
-// 是否为图片
-const isImage = computed(() => {
-  return selectedFile.value?.type?.includes('image');
-});
-
-// 获取文件图标
-const getFileIcon = (fileType: string) => {
-  if (fileType?.includes('pdf')) return '📄';
-  if (fileType?.includes('word') || fileType?.includes('document')) return '📝';
-  if (fileType?.includes('excel') || fileType?.includes('spreadsheet')) return '📊';
-  return '📎';
-};
-
-// 格式化文件大小
-const formatFileSize = (size: number) => {
-  if (!size) return '0B';
-  if (size < 1024) return size + 'B';
-  if (size < 1024 * 1024) return (size / 1024).toFixed(2) + 'KB';
-  return (size / (1024 * 1024)).toFixed(2) + 'MB';
-};
-
-// 分类改变
-const onCategoryChange = (e: any) => {
-  categoryIndex.value = e.detail.value;
-  formData.value.category = categories[categoryIndex.value];
-};
-
-// 阶段改变
-const onStageChange = (e: any) => {
-  stageIndex.value = e.detail.value;
-  formData.value.stage = stages[stageIndex.value];
-};
-
-// 选择文件
-const selectFile = async () => {
-  try {
-    // 先让用户选择文件类型
-    const typeRes = await uni.showActionSheet({
-      itemList: ['图片', '其他文件'],
-    });
-
-    if (typeRes[1].tapIndex === 0) {
-      // 选择图片
-      const res = await uni.chooseImage({
-        count: 1,
-        sizeType: ['compressed'],
-        sourceType: ['album', 'camera'],
-      });
-
-      if (res[1].tempFilePaths && res[1].tempFilePaths.length > 0) {
-        const tempFile = res[1].tempFiles[0];
-        selectedFile.value = {
-          path: res[1].tempFilePaths[0],
-          name: `图片_${Date.now()}.jpg`,
-          type: 'image/jpeg',
-          size: tempFile.size,
-        };
-
-        // 自动填充文件名
-        if (!formData.value.fileName) {
-          formData.value.fileName = selectedFile.value.name;
-        }
+      if (res.tempFilePaths && res.tempFilePaths.length > 0) {
+        res.tempFilePaths.forEach((path: string, index: number) => {
+          const tempFile = res.tempFiles[index];
+          selectedFiles.value.push({
+            path: path,
+            name: `病例图片_${Date.now()}_${index}.jpg`,
+            type: 'image/jpeg',
+            size: tempFile.size,
+          });
+        });
+        console.log('文件选择成功,已选择:', selectedFiles.value.length, '张');
+      } else {
+        console.log('没有选择文件');
       }
-    } else if (typeRes[1].tapIndex === 1) {
-      // 选择其他文件（需要使用chooseMessageFile）
-      const res = await uni.chooseMessageFile({
-        count: 1,
-        type: 'file',
-      });
-
-      if (res[1].tempFiles && res[1].tempFiles.length > 0) {
-        const tempFile = res[1].tempFiles[0];
-        selectedFile.value = {
-          path: tempFile.path,
-          name: tempFile.name,
-          type: tempFile.type || 'application/octet-stream',
-          size: tempFile.size,
-        };
-
-        // 自动填充文件名
-        if (!formData.value.fileName) {
-          formData.value.fileName = selectedFile.value.name;
-        }
+    },
+    fail: (error) => {
+      console.error('选择文件失败:', error);
+      if (error.errMsg && !error.errMsg.includes('cancel')) {
+        uni.showToast({
+          title: '选择文件失败',
+          icon: 'none',
+        });
       }
     }
-  } catch (error: any) {
-    console.error('选择文件失败:', error);
-  }
+  });
+};
+
+// 移除图片
+const removeFile = (index: number) => {
+  selectedFiles.value.splice(index, 1);
 };
 
 // 表单验证
 const validateForm = () => {
-  if (!formData.value.fileName) {
-    uni.showToast({ title: '请输入文件名称', icon: 'none' });
+  if (selectedFiles.value.length === 0) {
+    uni.showToast({ title: '请选择图片', icon: 'none' });
     return false;
   }
-  if (!formData.value.category) {
-    uni.showToast({ title: '请选择文件分类', icon: 'none' });
-    return false;
-  }
-  if (!formData.value.stage) {
-    uni.showToast({ title: '请选择所属阶段', icon: 'none' });
-    return false;
-  }
-  if (!selectedFile.value) {
-    uni.showToast({ title: '请选择文件', icon: 'none' });
-    return false;
-  }
-  // 检查文件大小（10MB限制）
-  if (selectedFile.value.size > 10 * 1024 * 1024) {
-    uni.showToast({ title: '文件大小不能超过10MB', icon: 'none' });
-    return false;
+  // 检查文件大小(10MB限制)
+  for (const file of selectedFiles.value) {
+    if (file.size > 10 * 1024 * 1024) {
+      uni.showToast({ title: '单个文件大小不能超过10MB', icon: 'none' });
+      return false;
+    }
   }
   return true;
 };
 
 // 提交
 const handleSubmit = async () => {
+  console.log('handleSubmit 被调用');
+  console.log('selectedFiles:', selectedFiles.value);
+  console.log('urlPatientId:', urlPatientId.value);
+
   if (!validateForm()) {
+    console.log('表单验证失败');
     return;
   }
 
   try {
     submitting.value = true;
+    console.log('开始处理上传...');
 
-    // 获取患者信息
-    const patient = await patientAPI.getMyInfo();
-
-    // 上传文件
-    const uploadRes = await uni.uploadFile({
-      url: 'http://localhost:3000/upload',
-      filePath: selectedFile.value.path,
-      name: 'file',
-      formData: {
-        patientId: patient.id,
-      },
-    });
-
-    if (uploadRes[1].statusCode === 200 || uploadRes[1].statusCode === 201) {
-      const uploadData = JSON.parse(uploadRes[1].data);
-
-      // 创建病历文件记录
-      await medicalFileAPI.create({
-        ...formData.value,
-        patientId: patient.id,
-        fileUrl: uploadData.url,
-        fileType: selectedFile.value.type,
-        fileSize: selectedFile.value.size,
-      });
-
-      uni.showToast({
-        title: '上传成功',
-        icon: 'success',
-        duration: 1500,
-      });
-
-      // 返回上一页
-      setTimeout(() => {
-        uni.navigateBack();
-      }, 1500);
+    // 确定患者ID(医生代上传时使用URL参数,患者自己上传时获取自己的信息)
+    let patientId: number;
+    if (urlPatientId.value) {
+      // 医生为患者上传
+      patientId = urlPatientId.value;
+      console.log('使用URL参数中的患者ID:', patientId);
     } else {
-      throw new Error('文件上传失败');
+      // 患者自己上传(已移除此功能,但保留兼容性)
+      console.log('获取患者自己的信息...');
+      const patient = await patientAPI.getMyInfo();
+      patientId = patient.id;
+      console.log('获取到患者ID:', patientId);
+    }
+
+    console.log(`开始上传 ${selectedFiles.value.length} 张图片`);
+    console.log('上传URL:', `${config.baseURL}/upload/single`);
+    console.log('Token:', uni.getStorageSync(config.tokenKey));
+
+    let successCount = 0;
+    let failCount = 0;
+
+    // 逐个上传文件
+    for (let i = 0; i < selectedFiles.value.length; i++) {
+      const file = selectedFiles.value[i];
+
+      try {
+        // 使用 Promise 包装 uni.uploadFile
+        await new Promise((resolve, reject) => {
+          uni.uploadFile({
+            url: `${config.baseURL}/upload/single`,
+            filePath: file.path,
+            name: 'file',
+            formData: {
+              patientId: patientId.toString(),
+            },
+            header: {
+              'Authorization': `Bearer ${uni.getStorageSync(config.tokenKey)}`,
+            },
+            success: async (uploadRes) => {
+              console.log(`第 ${i + 1} 张上传响应:`, uploadRes);
+
+              if (uploadRes.statusCode === 200 || uploadRes.statusCode === 201) {
+                const uploadData = JSON.parse(uploadRes.data);
+                console.log(`第 ${i + 1} 张上传成功,文件URL:`, uploadData.data.url);
+
+                // 创建病历文件记录
+                await medicalFileAPI.upload({
+                  fileName: uploadData.data.fileName,
+                  fileCategory: 'medical_record',
+                  stage: urlStage.value || 'V1',
+                  description: '',
+                  patientId,
+                  fileUrl: uploadData.data.url,
+                  fileType: uploadData.data.fileType,
+                  fileSize: uploadData.data.fileSize,
+                });
+
+                successCount++;
+                resolve(uploadData);
+              } else {
+                console.error(`第 ${i + 1} 张上传失败,状态码:`, uploadRes.statusCode);
+                failCount++;
+                reject(new Error(`状态码: ${uploadRes.statusCode}`));
+              }
+            },
+            fail: (error) => {
+              console.error(`第 ${i + 1} 张上传失败:`, error);
+              failCount++;
+              reject(error);
+            }
+          });
+        });
+      } catch (error) {
+        console.error(`第 ${i + 1} 张处理失败:`, error);
+        // 继续上传下一张
+      }
+    }
+
+    // 显示上传结果
+    if (successCount > 0) {
+      uni.showToast({
+        title: `成功上传${successCount}张${failCount > 0 ? `，失败${failCount}张` : ''}`,
+        icon: successCount === selectedFiles.value.length ? 'success' : 'none',
+        duration: 2000,
+      });
+
+      // 清空已选择的文件
+      selectedFiles.value = [];
+      // 刷新已上传文件列表
+      await loadUploadedFiles();
+    } else {
+      uni.showToast({
+        title: '全部上传失败',
+        icon: 'none',
+        duration: 2000,
+      });
     }
   } catch (error: any) {
+    console.error('上传错误:', error);
     uni.showToast({
       title: error.message || '上传失败',
       icon: 'none',
+      duration: 2000,
     });
   } finally {
     submitting.value = false;
   }
 };
+
+// 加载已上传的文件
+const loadUploadedFiles = async () => {
+  if (!urlPatientId.value) return;
+
+  try {
+    loading.value = true;
+    const params: any = {
+      patientId: urlPatientId.value,
+    };
+    if (urlStage.value) {
+      params.stage = urlStage.value;
+    }
+    const res = await medicalFileAPI.getList(params);
+    // API 返回 { data: files, total, page, pageSize, totalPages }
+    uploadedFiles.value = res.data || res.items || res || [];
+    console.log('已上传的文件:', uploadedFiles.value);
+  } catch (error) {
+    console.error('加载已上传文件失败:', error);
+  } finally {
+    loading.value = false;
+  }
+};
+
+// 预览图片
+const previewImage = (url: string) => {
+  const urls = uploadedFiles.value.map(f => f.fileUrl);
+  uni.previewImage({
+    current: url,
+    urls: urls,
+  });
+};
+
+// 格式化日期
+const formatDate = (dateStr: string) => {
+  if (!dateStr) return '';
+  const date = new Date(dateStr);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+};
+
+// 页面加载时接收URL参数
+onLoad((options: any) => {
+  console.log('onLoad 参数:', options);
+  if (options.patientId) {
+    urlPatientId.value = parseInt(options.patientId);
+    console.log('设置 patientId:', urlPatientId.value);
+  }
+  if (options.stage) {
+    urlStage.value = options.stage;
+    console.log('设置 stage:', urlStage.value);
+  }
+});
+
+// 页面显示时加载已上传的文件
+onShow(() => {
+  console.log('onShow 触发, patientId:', urlPatientId.value);
+  if (urlPatientId.value) {
+    loadUploadedFiles();
+  }
+});
 </script>
 
 <style scoped>
@@ -285,6 +321,61 @@ const handleSubmit = async () => {
   min-height: 100vh;
   background-color: #f5f5f5;
   padding: 30rpx;
+}
+
+/* 已上传文件区域 */
+.uploaded-section {
+  background-color: #ffffff;
+  border-radius: 20rpx;
+  padding: 30rpx;
+  margin-bottom: 30rpx;
+}
+
+.section-header {
+  margin-bottom: 20rpx;
+}
+
+.section-title {
+  font-size: 30rpx;
+  font-weight: 500;
+  color: #333333;
+}
+
+.uploaded-files {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20rpx;
+}
+
+.uploaded-item {
+  width: 200rpx;
+}
+
+.uploaded-image {
+  width: 200rpx;
+  height: 200rpx;
+  border-radius: 10rpx;
+  background-color: #f7f8fa;
+}
+
+.file-info {
+  margin-top: 10rpx;
+}
+
+.file-name {
+  display: block;
+  font-size: 22rpx;
+  color: #666666;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-date {
+  display: block;
+  font-size: 20rpx;
+  color: #999999;
+  margin-top: 4rpx;
 }
 
 .form-container {
@@ -309,47 +400,28 @@ const handleSubmit = async () => {
   color: #ff4d4f;
 }
 
-.input,
-.picker,
-.textarea {
-  width: 100%;
-  padding: 20rpx;
-  background-color: #f7f8fa;
-  border-radius: 10rpx;
-  font-size: 28rpx;
-  color: #333333;
-}
-
-.textarea {
-  min-height: 150rpx;
-}
-
-.placeholder {
-  color: #999999;
-}
-
 .file-upload-section {
   margin-top: 20rpx;
 }
 
-.selected-file {
+.selected-files {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
   gap: 20rpx;
-  padding: 30rpx;
-  background-color: #f7f8fa;
-  border-radius: 10rpx;
+}
+
+.file-item {
+  width: 200rpx;
+  height: 200rpx;
 }
 
 .file-preview {
   width: 100%;
-  height: 400rpx;
-  background-color: #ffffff;
+  height: 100%;
+  background-color: #f7f8fa;
   border-radius: 10rpx;
   overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  position: relative;
 }
 
 .preview-image {
@@ -357,35 +429,34 @@ const handleSubmit = async () => {
   height: 100%;
 }
 
-.file-placeholder {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 20rpx;
+.remove-btn {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 50rpx;
+  height: 50rpx;
+  background-color: rgba(0, 0, 0, 0.6);
+  color: #ffffff;
+  font-size: 40rpx;
+  line-height: 50rpx;
+  text-align: center;
+  border-radius: 0 10rpx 0 10rpx;
 }
 
-.file-icon {
-  font-size: 100rpx;
-}
-
-.file-size {
-  font-size: 24rpx;
-  color: #999999;
-}
-
-.file-name {
-  font-size: 26rpx;
-  color: #333333;
-  word-break: break-all;
-}
-
-.change-file-btn {
-  height: 70rpx;
-  background-color: #ffffff;
-  color: #667eea;
+.add-more-btn {
+  width: 200rpx;
+  height: 200rpx;
+  background-color: #f7f8fa;
   border-radius: 10rpx;
-  font-size: 26rpx;
-  border: 2rpx solid #667eea;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2rpx dashed #d9d9d9;
+}
+
+.add-icon {
+  font-size: 80rpx;
+  color: #999999;
 }
 
 .select-file-btn {

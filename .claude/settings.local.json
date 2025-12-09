@@ -40,7 +40,12 @@
       "Bash(git checkout:*)",
       "Bash(docker run:*)",
       "Bash(echo:*)",
-      "Bash(docker inspect:*)"
+      "Bash(docker inspect:*)",
+      "Bash(python -m json.tool:*)",
+      "Bash(docker restart:*)",
+      "Bash(docker start:*)",
+      "Bash(docker rm:*)",
+      "Bash(timeout /t 15 /nobreak)"
     ],
     "deny": [],
     "ask": []

@@ -102,8 +102,8 @@ const handleLogin = async () => {
 
     // 跳转到医生端首页
     setTimeout(() => {
-      uni.switchTab({
-        url: '/pages/doctor/index',
+      uni.reLaunch({
+        url: '/pages/doctor/home',
       });
     }, 1500);
   } catch (error: any) {
@@ -142,8 +142,8 @@ const handleWxLogin = async () => {
         });
 
         setTimeout(() => {
-          uni.switchTab({
-            url: '/pages/doctor/index',
+          uni.reLaunch({
+            url: '/pages/doctor/home',
           });
         }, 1500);
       } else {

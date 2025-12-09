@@ -3,12 +3,15 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AdverseEvent } from '../../database/entities/adverse-event.entity';
 import { AeAttachment } from '../../database/entities/ae-attachment.entity';
+import { Patient } from '../../database/entities/patient.entity';
+import { Doctor } from '../../database/entities/doctor.entity';
 import {
   CreateAdverseEventDto,
   UpdateAdverseEventDto,
   QueryAdverseEventDto,
   CreateAeAttachmentDto,
 } from './dto/adverse-event.dto';
+import { PushMessageService } from '../push-message/push-message.service';
 
 @Injectable()
 export class AdverseEventService {
@@ -17,6 +20,11 @@ export class AdverseEventService {
     private adverseEventRepository: Repository<AdverseEvent>,
     @InjectRepository(AeAttachment)
     private aeAttachmentRepository: Repository<AeAttachment>,
+    @InjectRepository(Patient)
+    private patientRepository: Repository<Patient>,
+    @InjectRepository(Doctor)
+    private doctorRepository: Repository<Doctor>,
+    private pushMessageService: PushMessageService,
   ) {}
 
   // ==================== 不良事件管理 ====================
@@ -34,7 +42,32 @@ export class AdverseEventService {
       ...createAdverseEventDto,
       aeNumber,
     });
-    return await this.adverseEventRepository.save(event);
+    const savedEvent = await this.adverseEventRepository.save(event);
+
+    // 查询患者和医生信息
+    const patient = await this.patientRepository.findOne({
+      where: { id: createAdverseEventDto.patientId },
+      relations: ['user'],
+    });
+
+    if (patient) {
+      const doctor = await this.doctorRepository.findOne({
+        where: { id: patient.doctorId },
+      });
+
+      if (doctor) {
+        // 所有不良事件都通知医生
+        await this.pushMessageService.notifyDoctorAdverseEvent(
+          doctor.userId,
+          patient.user.name,
+          createAdverseEventDto.severity,
+          savedEvent.id,
+          patient.id,
+        );
+      }
+    }
+
+    return savedEvent;
   }
 
   /**
