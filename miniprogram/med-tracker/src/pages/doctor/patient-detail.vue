@@ -513,7 +513,8 @@ const loadMedicalFiles = async () => {
     const result = await medicalFileAPI.getList({
       patientId: patientId.value,
     });
-    medicalFiles.value = result.items || result || [];
+    // 后端返回 { data: [...], total, page, pageSize, totalPages }
+    medicalFiles.value = result.data || result.items || result || [];
   } catch (error: any) {
     console.error('加载病历文件失败:', error);
   }
