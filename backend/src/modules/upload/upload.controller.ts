@@ -5,6 +5,7 @@ import {
   UploadedFile,
   UploadedFiles,
   Query,
+  Body,
 } from '@nestjs/common';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiConsumes, ApiBearerAuth } from '@nestjs/swagger';
@@ -23,8 +24,9 @@ export class UploadController {
   async uploadSingle(
     @UploadedFile() file: Express.Multer.File,
     @Query('folder') folder?: string,
+    @Body('originalFileName') originalFileName?: string,
   ) {
-    const result = await this.uploadService.uploadFile(file, folder);
+    const result = await this.uploadService.uploadFile(file, folder, originalFileName);
     return {
       success: true,
       data: result,

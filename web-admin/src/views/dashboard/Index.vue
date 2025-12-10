@@ -1,7 +1,7 @@
 <template>
   <div class="dashboard">
-    <el-row :gutter="20" class="stat-cards">
-      <el-col :span="6">
+    <el-row :gutter="16" class="stat-cards">
+      <el-col :xs="12" :sm="8" :md="4" :lg="4">
         <el-card class="stat-card">
           <div class="stat-content">
             <div class="stat-icon patient">
@@ -15,21 +15,21 @@
         </el-card>
       </el-col>
 
-      <el-col :span="6">
+      <el-col :xs="12" :sm="8" :md="4" :lg="4">
         <el-card class="stat-card">
           <div class="stat-content">
             <div class="stat-icon stage">
-              <el-icon><Document /></el-icon>
+              <el-icon><Plus /></el-icon>
             </div>
             <div class="stat-info">
-              <div class="stat-label">V1阶段患者</div>
-              <div class="stat-value">{{ statistics.v1Patients }}</div>
+              <div class="stat-label">本周新增</div>
+              <div class="stat-value">{{ statistics.weeklyNewPatients }}</div>
             </div>
           </div>
         </el-card>
       </el-col>
 
-      <el-col :span="6">
+      <el-col :xs="12" :sm="8" :md="4" :lg="4">
         <el-card class="stat-card">
           <div class="stat-content">
             <div class="stat-icon pending">
@@ -43,7 +43,21 @@
         </el-card>
       </el-col>
 
-      <el-col :span="6">
+      <el-col :xs="12" :sm="8" :md="4" :lg="4">
+        <el-card class="stat-card">
+          <div class="stat-content">
+            <div class="stat-icon overdue">
+              <el-icon><Timer /></el-icon>
+            </div>
+            <div class="stat-info">
+              <div class="stat-label">逾期患者</div>
+              <div class="stat-value">{{ statistics.overduePatients }}</div>
+            </div>
+          </div>
+        </el-card>
+      </el-col>
+
+      <el-col :xs="12" :sm="8" :md="4" :lg="4">
         <el-card class="stat-card">
           <div class="stat-content">
             <div class="stat-icon warning">
@@ -74,10 +88,10 @@
         <el-card>
           <template #header>
             <div class="card-header">
-              <span>量表得分趋势</span>
+              <span>周月数据对比</span>
             </div>
           </template>
-          <div ref="scaleChartRef" style="height: 300px"></div>
+          <div ref="comparisonChartRef" style="height: 300px"></div>
         </el-card>
       </el-col>
     </el-row>
@@ -95,6 +109,19 @@
       </el-col>
 
       <el-col :span="12">
+        <el-card>
+          <template #header>
+            <div class="card-header">
+              <span>最近7天活跃趋势</span>
+            </div>
+          </template>
+          <div ref="activityTrendChartRef" style="height: 300px"></div>
+        </el-card>
+      </el-col>
+    </el-row>
+
+    <el-row :gutter="20" class="charts">
+      <el-col :span="24">
         <el-card>
           <template #header>
             <div class="card-header">
@@ -122,51 +149,123 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import * as echarts from 'echarts';
+import { dashboardAPI } from '@/api/dashboard';
+import { ElMessage } from 'element-plus';
+
+const loading = ref(false);
 
 const statistics = ref({
-  totalPatients: 156,
-  v1Patients: 45,
-  pendingAudits: 12,
-  seriousAE: 3,
+  totalPatients: 0,
+  weeklyNewPatients: 0,
+  pendingAudits: 0,
+  overduePatients: 0,
+  seriousAE: 0,
 });
 
 const stageChartRef = ref<HTMLDivElement>();
-const scaleChartRef = ref<HTMLDivElement>();
+const comparisonChartRef = ref<HTMLDivElement>();
 const aeChartRef = ref<HTMLDivElement>();
+const activityTrendChartRef = ref<HTMLDivElement>();
 
-const recentActivities = ref([
-  {
-    content: '患者张三完成了V1阶段审核',
-    timestamp: '2025-11-26 10:30',
-  },
-  {
-    content: '医生李四提交了新的患者注册',
-    timestamp: '2025-11-26 09:15',
-  },
-  {
-    content: '患者王五填写了AIS量表',
-    timestamp: '2025-11-26 08:45',
-  },
-  {
-    content: '检测到1例中度不良事件',
-    timestamp: '2025-11-25 16:20',
-  },
-  {
-    content: '患者赵六完成了V2阶段',
-    timestamp: '2025-11-25 14:10',
-  },
-]);
+let stageChart: echarts.ECharts | null = null;
+let comparisonChart: echarts.ECharts | null = null;
+let aeChart: echarts.ECharts | null = null;
+let activityTrendChart: echarts.ECharts | null = null;
 
-onMounted(() => {
-  initStageChart();
-  initScaleChart();
-  initAEChart();
+const recentActivities = ref<Array<{ content: string; timestamp: string }>>([]);
+
+onMounted(async () => {
+  loading.value = true;
+  try {
+    await Promise.all([
+      fetchStatistics(),
+      fetchStageDistribution(),
+      fetchWeeklyMonthlyComparison(),
+      fetchAEStats(),
+      fetchRecentActivities(),
+      fetchDailyActivityTrend(),
+    ]);
+  } catch (error) {
+    console.error('Failed to load dashboard data:', error);
+  } finally {
+    loading.value = false;
+  }
 });
 
-const initStageChart = () => {
+const fetchStatistics = async () => {
+  try {
+    const res = await dashboardAPI.getStatistics();
+    if (res) {
+      statistics.value = res as any;
+    }
+  } catch (error) {
+    console.error('Failed to fetch statistics:', error);
+  }
+};
+
+const fetchStageDistribution = async () => {
+  try {
+    const res = await dashboardAPI.getStageDistribution();
+    if (res) {
+      initStageChart(res as any);
+    }
+  } catch (error) {
+    console.error('Failed to fetch stage distribution:', error);
+    initStageChart([]);
+  }
+};
+
+const fetchWeeklyMonthlyComparison = async () => {
+  try {
+    const res = await dashboardAPI.getWeeklyMonthlyComparison();
+    if (res) {
+      initComparisonChart(res as any);
+    }
+  } catch (error) {
+    console.error('Failed to fetch weekly monthly comparison:', error);
+    initComparisonChart({ categories: [], series: [] });
+  }
+};
+
+const fetchAEStats = async () => {
+  try {
+    const res = await dashboardAPI.getAdverseEventStats();
+    if (res) {
+      initAEChart(res as any);
+    }
+  } catch (error) {
+    console.error('Failed to fetch AE stats:', error);
+    initAEChart({ stages: ['V1', 'V2', 'V3', 'V4'], series: [] });
+  }
+};
+
+const fetchRecentActivities = async () => {
+  try {
+    const res = await dashboardAPI.getRecentActivities(10);
+    if (res) {
+      recentActivities.value = res as any;
+    }
+  } catch (error) {
+    console.error('Failed to fetch recent activities:', error);
+  }
+};
+
+const fetchDailyActivityTrend = async () => {
+  try {
+    const res = await dashboardAPI.getDailyActivityTrend();
+    if (res) {
+      initActivityTrendChart(res as any);
+    }
+  } catch (error) {
+    console.error('Failed to fetch daily activity trend:', error);
+    initActivityTrendChart({ dates: [], patients: [], scales: [] });
+  }
+};
+
+const initStageChart = (data: Array<{ value: number; name: string }>) => {
   if (!stageChartRef.value) return;
 
-  const chart = echarts.init(stageChartRef.value);
+  stageChart = echarts.init(stageChartRef.value);
   const option = {
     tooltip: {
       trigger: 'item',
@@ -201,73 +300,18 @@ const initStageChart = () => {
         labelLine: {
           show: false,
         },
-        data: [
-          { value: 45, name: 'V1阶段' },
-          { value: 38, name: 'V2阶段' },
-          { value: 32, name: 'V3阶段' },
-          { value: 25, name: 'V4阶段' },
-          { value: 16, name: '已完成' },
-        ],
+        data: data.length > 0 ? data : [{ value: 0, name: '暂无数据' }],
       },
     ],
   };
-  chart.setOption(option);
+  stageChart.setOption(option);
 };
 
-const initScaleChart = () => {
-  if (!scaleChartRef.value) return;
+const initComparisonChart = (data: { categories: string[]; series: Array<{ name: string; data: number[] }> }) => {
+  if (!comparisonChartRef.value) return;
 
-  const chart = echarts.init(scaleChartRef.value);
-  const option = {
-    tooltip: {
-      trigger: 'axis',
-    },
-    legend: {
-      data: ['AIS', 'ESS', 'GAD-7', 'PHQ-9'],
-    },
-    xAxis: {
-      type: 'category',
-      boundaryGap: false,
-      data: ['V1', 'V2', 'V3', 'V4'],
-    },
-    yAxis: {
-      type: 'value',
-      name: '平均分',
-    },
-    series: [
-      {
-        name: 'AIS',
-        type: 'line',
-        data: [18, 15, 12, 9],
-        smooth: true,
-      },
-      {
-        name: 'ESS',
-        type: 'line',
-        data: [14, 12, 10, 8],
-        smooth: true,
-      },
-      {
-        name: 'GAD-7',
-        type: 'line',
-        data: [12, 10, 8, 6],
-        smooth: true,
-      },
-      {
-        name: 'PHQ-9',
-        type: 'line',
-        data: [15, 12, 9, 7],
-        smooth: true,
-      },
-    ],
-  };
-  chart.setOption(option);
-};
-
-const initAEChart = () => {
-  if (!aeChartRef.value) return;
-
-  const chart = echarts.init(aeChartRef.value);
+  comparisonChart = echarts.init(comparisonChartRef.value);
+  const colors = ['#5470c6', '#91cc75', '#fac858', '#ee6666'];
   const option = {
     tooltip: {
       trigger: 'axis',
@@ -276,38 +320,128 @@ const initAEChart = () => {
       },
     },
     legend: {
-      data: ['轻度', '中度', '重度'],
+      data: data.series.map((s) => s.name),
+      top: 0,
+      left: 'center',
+    },
+    grid: {
+      left: '3%',
+      right: '4%',
+      top: '15%',
+      bottom: '3%',
+      containLabel: true,
     },
     xAxis: {
       type: 'category',
-      data: ['V1', 'V2', 'V3', 'V4'],
+      data: data.categories,
+    },
+    yAxis: {
+      type: 'value',
+      name: '数量',
+    },
+    series: data.series.map((s, index) => ({
+      name: s.name,
+      type: 'bar',
+      data: s.data,
+      itemStyle: {
+        color: colors[index % colors.length],
+      },
+    })),
+  };
+  comparisonChart.setOption(option);
+};
+
+const initAEChart = (data: { stages: string[]; series: Array<{ name: string; data: number[] }> }) => {
+  if (!aeChartRef.value) return;
+
+  aeChart = echarts.init(aeChartRef.value);
+  const option = {
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: {
+        type: 'shadow',
+      },
+    },
+    legend: {
+      data: data.series.map((s) => s.name),
+    },
+    xAxis: {
+      type: 'category',
+      data: data.stages,
     },
     yAxis: {
       type: 'value',
       name: '事件数',
     },
+    series: data.series.map((s) => ({
+      name: s.name,
+      type: 'bar',
+      stack: 'total',
+      data: s.data,
+    })),
+  };
+  aeChart.setOption(option);
+};
+
+const initActivityTrendChart = (data: { dates: string[]; patients: number[]; scales: number[] }) => {
+  if (!activityTrendChartRef.value) return;
+
+  activityTrendChart = echarts.init(activityTrendChartRef.value);
+  const option = {
+    tooltip: {
+      trigger: 'axis',
+    },
+    legend: {
+      data: ['活跃患者', '量表填写'],
+      top: 5,
+      right: 20,
+    },
+    grid: {
+      left: '3%',
+      right: '4%',
+      top: '18%',
+      bottom: '3%',
+      containLabel: true,
+    },
+    xAxis: {
+      type: 'category',
+      boundaryGap: false,
+      data: data.dates,
+    },
+    yAxis: {
+      type: 'value',
+      name: '数量',
+    },
     series: [
       {
-        name: '轻度',
-        type: 'bar',
-        stack: 'total',
-        data: [12, 10, 8, 6],
+        name: '活跃患者',
+        type: 'line',
+        data: data.patients,
+        smooth: true,
+        itemStyle: { color: '#5470c6' },
+        areaStyle: {
+          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: 'rgba(84, 112, 198, 0.3)' },
+            { offset: 1, color: 'rgba(84, 112, 198, 0.05)' },
+          ]),
+        },
       },
       {
-        name: '中度',
-        type: 'bar',
-        stack: 'total',
-        data: [5, 4, 3, 2],
-      },
-      {
-        name: '重度',
-        type: 'bar',
-        stack: 'total',
-        data: [1, 1, 0, 1],
+        name: '量表填写',
+        type: 'line',
+        data: data.scales,
+        smooth: true,
+        itemStyle: { color: '#91cc75' },
+        areaStyle: {
+          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: 'rgba(145, 204, 117, 0.3)' },
+            { offset: 1, color: 'rgba(145, 204, 117, 0.05)' },
+          ]),
+        },
       },
     ],
   };
-  chart.setOption(option);
+  activityTrendChart.setOption(option);
 };
 </script>
 
@@ -351,6 +485,10 @@ const initAEChart = () => {
 
 .stat-icon.pending {
   background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.stat-icon.overdue {
+  background: linear-gradient(135deg, #f5af19 0%, #f12711 100%);
 }
 
 .stat-icon.warning {

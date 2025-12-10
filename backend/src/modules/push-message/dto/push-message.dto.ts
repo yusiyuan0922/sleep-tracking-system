@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsString, IsNumber, IsBoolean, IsOptional, IsObject, IsIn } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 
 export class CreatePushMessageDto {
   @ApiProperty({ description: '接收用户ID' })
@@ -43,9 +43,14 @@ export class QueryPushMessageDto {
   type?: 'stage_reminder' | 'audit_result' | 'ae_alert' | 'system_notice';
 
   @ApiProperty({ description: '是否已读', required: false })
-  @IsBoolean()
   @IsOptional()
-  @Type(() => Boolean)
+  @Transform(({ value }) => {
+    console.log('[Transform isRead] input value:', value, 'type:', typeof value);
+    if (value === '' || value === null || value === undefined) return undefined;
+    if (value === 'true' || value === true || value === 1 || value === '1') return true;
+    if (value === 'false' || value === false || value === 0 || value === '0') return false;
+    return undefined;
+  })
   isRead?: boolean;
 
   @ApiProperty({ description: '页码', required: false, default: 1 })

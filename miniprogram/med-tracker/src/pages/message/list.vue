@@ -166,6 +166,29 @@ const onLoadMore = () => {
   fetchMessages();
 };
 
+// tabbar 页面列表
+const tabbarPages = [
+  '/pages/index/index',
+  '/pages/scale/list',
+  '/pages/medication/list',
+  '/pages/profile/index',
+];
+
+// 判断是否是 tabbar 页面
+const isTabbarPage = (url: string) => {
+  const path = url.split('?')[0]; // 去除查询参数
+  return tabbarPages.some(tabPath => path === tabPath);
+};
+
+// 智能导航：自动判断使用 navigateTo 还是 switchTab
+const smartNavigate = (url: string) => {
+  if (isTabbarPage(url)) {
+    uni.switchTab({ url: url.split('?')[0] }); // switchTab 不支持参数
+  } else {
+    uni.navigateTo({ url });
+  }
+};
+
 // 点击消息
 const handleMessageClick = async (message: MessageDetail) => {
   // 标记为已读
@@ -183,9 +206,7 @@ const handleMessageClick = async (message: MessageDetail) => {
 
   // 如果有导航信息,跳转到对应页面
   if (message.data?.navigateTo) {
-    uni.navigateTo({
-      url: message.data.navigateTo,
-    });
+    smartNavigate(message.data.navigateTo);
   } else {
     // 否则跳转到消息详情页
     uni.navigateTo({

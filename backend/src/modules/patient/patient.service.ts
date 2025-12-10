@@ -129,6 +129,10 @@ export class PatientService {
     // 生成患者编号 (格式: P + 时间戳后8位 + 随机3位数)
     const patientNo = this.generatePatientNo();
 
+    // 计算所有阶段的时间窗口（基于入组日期）
+    const enrollmentDate = new Date();
+    const timeWindows = this.calculateAllTimeWindows(enrollmentDate);
+
     // 创建患者记录
     const patient = this.patientRepository.create({
       userId,
@@ -140,6 +144,14 @@ export class PatientService {
       diagnosis,
       currentStage: 'V1',
       status: 'active',
+      enrollmentDate,
+      // 设置所有时间窗口
+      v2WindowStart: timeWindows.v2.start,
+      v2WindowEnd: timeWindows.v2.end,
+      v3WindowStart: timeWindows.v3.start,
+      v3WindowEnd: timeWindows.v3.end,
+      v4WindowStart: timeWindows.v4.start,
+      v4WindowEnd: timeWindows.v4.end,
     });
 
     const savedPatient = await this.patientRepository.save(patient);
@@ -167,6 +179,89 @@ export class PatientService {
       .toString()
       .padStart(3, '0');
     return `P${timestamp}${random}`;
+  }
+
+  /**
+   * 计算所有阶段的时间窗口（基于入组日期）
+   * 时间窗口是累积计算的：
+   * - V2窗口 = 入组日期 + V1_TO_V2_DAYS (±容差)
+   * - V3窗口 = V2窗口开始 + V2_TO_V3_DAYS (±容差)
+   * - V4窗口 = V3窗口开始 + V3_TO_V4_DAYS (±容差)
+   */
+  calculateAllTimeWindows(enrollmentDate: Date) {
+    const enrollment = new Date(enrollmentDate);
+    enrollment.setHours(0, 0, 0, 0);
+
+    // V2时间窗口：入组后第6-8天 (7天±1天)
+    const v2Start = new Date(enrollment);
+    v2Start.setDate(v2Start.getDate() + STAGE_CONFIG.V1_TO_V2_DAYS - STAGE_CONFIG.V1_TO_V2_TOLERANCE);
+    const v2End = new Date(enrollment);
+    v2End.setDate(v2End.getDate() + STAGE_CONFIG.V1_TO_V2_DAYS + STAGE_CONFIG.V1_TO_V2_TOLERANCE);
+
+    // V3时间窗口：V2窗口开始 + 21天±2天 = 入组后第25-31天
+    const v3Start = new Date(v2Start);
+    v3Start.setDate(v3Start.getDate() + STAGE_CONFIG.V2_TO_V3_DAYS - STAGE_CONFIG.V2_TO_V3_TOLERANCE);
+    const v3End = new Date(v2Start);
+    v3End.setDate(v3End.getDate() + STAGE_CONFIG.V2_TO_V3_DAYS + STAGE_CONFIG.V2_TO_V3_TOLERANCE);
+
+    // V4时间窗口：V3窗口开始 + 7天±2天
+    const v4Start = new Date(v3Start);
+    v4Start.setDate(v4Start.getDate() + STAGE_CONFIG.V3_TO_V4_DAYS - STAGE_CONFIG.V3_TO_V4_TOLERANCE);
+    const v4End = new Date(v3Start);
+    v4End.setDate(v4End.getDate() + STAGE_CONFIG.V3_TO_V4_DAYS + STAGE_CONFIG.V3_TO_V4_TOLERANCE);
+
+    return {
+      v2: { start: v2Start, end: v2End },
+      v3: { start: v3Start, end: v3End },
+      v4: { start: v4Start, end: v4End },
+    };
+  }
+
+  /**
+   * 根据时间计算患者应该处于的阶段
+   * 纯时间驱动，不考虑审核状态
+   */
+  calculateCurrentStageByTime(patient: Patient): 'V1' | 'V2' | 'V3' | 'V4' | 'completed' {
+    // 已完成的患者不再变更
+    if (patient.status === 'completed' || patient.currentStage === 'completed') {
+      return 'completed';
+    }
+
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+
+    // 根据时间窗口判断当前应处于的阶段
+    if (patient.v4WindowStart && now >= new Date(patient.v4WindowStart)) {
+      return 'V4';
+    }
+    if (patient.v3WindowStart && now >= new Date(patient.v3WindowStart)) {
+      return 'V3';
+    }
+    if (patient.v2WindowStart && now >= new Date(patient.v2WindowStart)) {
+      return 'V2';
+    }
+    return 'V1';
+  }
+
+  /**
+   * 同步患者阶段（根据时间更新currentStage）
+   * 在获取患者信息时调用，确保阶段与时间同步
+   */
+  async syncPatientStage(patient: Patient): Promise<Patient> {
+    if (patient.status === 'completed') {
+      return patient;
+    }
+
+    const calculatedStage = this.calculateCurrentStageByTime(patient);
+
+    if (calculatedStage !== patient.currentStage) {
+      patient.currentStage = calculatedStage;
+      patient.pendingReview = false; // 阶段变更时重置待审核状态
+      await this.patientRepository.save(patient);
+      console.log(`[阶段同步] 患者ID: ${patient.id}, 阶段从数据库值更新为: ${calculatedStage}`);
+    }
+
+    return patient;
   }
 
   /**
@@ -233,6 +328,11 @@ export class PatientService {
 
     const [list, total] = await queryBuilder.getManyAndCount();
 
+    // 同步所有患者的阶段状态
+    for (const patient of list) {
+      await this.syncPatientStage(patient);
+    }
+
     return {
       list,
       total,
@@ -255,17 +355,23 @@ export class PatientService {
       throw new NotFoundException(`患者ID ${id} 不存在`);
     }
 
-    return patient;
+    // 同步阶段状态
+    return await this.syncPatientStage(patient);
   }
 
   /**
    * 根据用户ID获取患者信息
    */
   async findByUserId(userId: number): Promise<Patient | null> {
-    return await this.patientRepository.findOne({
+    const patient = await this.patientRepository.findOne({
       where: { userId },
       relations: ['user', 'doctor', 'doctor.user', 'hospital'],
     });
+
+    if (patient) {
+      return await this.syncPatientStage(patient);
+    }
+    return null;
   }
 
   /**
@@ -288,19 +394,20 @@ export class PatientService {
   }
 
   /**
-   * 完成V1阶段,设置V2时间窗口
+   * 审核V1阶段（时间驱动模式：只标记完成状态，不推进阶段）
+   * 阶段推进由时间窗口自动控制
    */
   async completeV1(id: number, completeV1Dto: CompleteV1Dto): Promise<Patient> {
     const patient = await this.findOne(id);
 
-    // 只有当前阶段为V1的患者才能完成V1
+    // 只有当前阶段为V1的患者才能审核V1
     if (patient.currentStage !== 'V1') {
       throw new BadRequestException(
-        `患者当前阶段为 ${patient.currentStage},无法完成V1`,
+        `患者当前阶段为 ${patient.currentStage},无法审核V1`,
       );
     }
 
-    // 如果是驳回,只保存审核意见,不修改阶段状态
+    // 如果是驳回,只保存审核意见
     if (completeV1Dto.reviewDecision === 'rejected') {
       patient.pendingReview = false;
       const savedPatient = await this.patientRepository.save(patient);
@@ -327,56 +434,37 @@ export class PatientService {
       );
     }
 
-    // 更新V1完成时间
+    // 只记录V1完成时间，不修改currentStage（阶段由时间驱动）
     patient.v1CompletedAt = new Date();
-
-    // 自动计算V2时间窗口(如果未提供)
-    if (completeV1Dto.v2WindowStart && completeV1Dto.v2WindowEnd) {
-      patient.v2WindowStart = new Date(completeV1Dto.v2WindowStart);
-      patient.v2WindowEnd = new Date(completeV1Dto.v2WindowEnd);
-    } else {
-      const v1Date = patient.v1CompletedAt;
-      const v2Start = new Date(v1Date);
-      v2Start.setDate(v2Start.getDate() + STAGE_CONFIG.V1_TO_V2_DAYS - STAGE_CONFIG.V1_TO_V2_TOLERANCE);
-
-      const v2End = new Date(v1Date);
-      v2End.setDate(v2End.getDate() + STAGE_CONFIG.V1_TO_V2_DAYS + STAGE_CONFIG.V1_TO_V2_TOLERANCE);
-
-      patient.v2WindowStart = v2Start;
-      patient.v2WindowEnd = v2End;
-    }
-
-    patient.currentStage = 'V2';
     patient.pendingReview = false;
 
     const savedPatient = await this.patientRepository.save(patient);
 
-    // 发送审核通过消息,包含V2阶段必填项
-    const v2Requirements = getStageRequirementsDescription('V2');
-    await this.pushMessageService.notifyPatientStageApproved(
+    // 发送审核通过消息
+    await this.pushMessageService.createAuditResultMessage(
       patient.userId,
       'V1',
-      'V2',
-      v2Requirements,
+      'approved',
+      completeV1Dto.reviewNotes || 'V1阶段审核通过',
     );
 
     return savedPatient;
   }
 
   /**
-   * 完成V2阶段,设置V3时间窗口
+   * 审核V2阶段（时间驱动模式：只标记完成状态，不推进阶段）
    */
   async completeV2(id: number, completeV2Dto: CompleteV2Dto): Promise<Patient> {
     const patient = await this.findOne(id);
 
-    // 只有当前阶段为V2的患者才能完成V2
+    // 只有当前阶段为V2的患者才能审核V2
     if (patient.currentStage !== 'V2') {
       throw new BadRequestException(
-        `患者当前阶段为 ${patient.currentStage},无法完成V2`,
+        `患者当前阶段为 ${patient.currentStage},无法审核V2`,
       );
     }
 
-    // 如果是驳回,只保存审核意见,不修改阶段状态
+    // 如果是驳回,只保存审核意见
     if (completeV2Dto.reviewDecision === 'rejected') {
       patient.pendingReview = false;
       const savedPatient = await this.patientRepository.save(patient);
@@ -403,56 +491,37 @@ export class PatientService {
       );
     }
 
-    // 更新V2完成时间
+    // 只记录V2完成时间，不修改currentStage（阶段由时间驱动）
     patient.v2CompletedAt = new Date();
-
-    // 自动计算V3时间窗口(如果未提供)
-    if (completeV2Dto.v3WindowStart && completeV2Dto.v3WindowEnd) {
-      patient.v3WindowStart = new Date(completeV2Dto.v3WindowStart);
-      patient.v3WindowEnd = new Date(completeV2Dto.v3WindowEnd);
-    } else {
-      const v2Date = patient.v2CompletedAt;
-      const v3Start = new Date(v2Date);
-      v3Start.setDate(v3Start.getDate() + STAGE_CONFIG.V2_TO_V3_DAYS - STAGE_CONFIG.V2_TO_V3_TOLERANCE);
-
-      const v3End = new Date(v2Date);
-      v3End.setDate(v3End.getDate() + STAGE_CONFIG.V2_TO_V3_DAYS + STAGE_CONFIG.V2_TO_V3_TOLERANCE);
-
-      patient.v3WindowStart = v3Start;
-      patient.v3WindowEnd = v3End;
-    }
-
-    patient.currentStage = 'V3';
     patient.pendingReview = false;
 
     const savedPatient = await this.patientRepository.save(patient);
 
-    // 发送审核通过消息,包含V3阶段必填项
-    const v3Requirements = getStageRequirementsDescription('V3');
-    await this.pushMessageService.notifyPatientStageApproved(
+    // 发送审核通过消息
+    await this.pushMessageService.createAuditResultMessage(
       patient.userId,
       'V2',
-      'V3',
-      v3Requirements,
+      'approved',
+      completeV2Dto.reviewNotes || 'V2阶段审核通过',
     );
 
     return savedPatient;
   }
 
   /**
-   * 完成V3阶段,设置V4时间窗口
+   * 审核V3阶段（时间驱动模式：只标记完成状态，不推进阶段）
    */
   async completeV3(id: number, completeV3Dto: CompleteV3Dto): Promise<Patient> {
     const patient = await this.findOne(id);
 
-    // 只有当前阶段为V3的患者才能完成V3
+    // 只有当前阶段为V3的患者才能审核V3
     if (patient.currentStage !== 'V3') {
       throw new BadRequestException(
-        `患者当前阶段为 ${patient.currentStage},无法完成V3`,
+        `患者当前阶段为 ${patient.currentStage},无法审核V3`,
       );
     }
 
-    // 如果是驳回,只保存审核意见,不修改阶段状态
+    // 如果是驳回,只保存审核意见
     if (completeV3Dto.reviewDecision === 'rejected') {
       patient.pendingReview = false;
       const savedPatient = await this.patientRepository.save(patient);
@@ -479,37 +548,18 @@ export class PatientService {
       );
     }
 
-    // 更新V3完成时间
+    // 只记录V3完成时间，不修改currentStage（阶段由时间驱动）
     patient.v3CompletedAt = new Date();
-
-    // 自动计算V4时间窗口(如果未提供)
-    if (completeV3Dto.v4WindowStart && completeV3Dto.v4WindowEnd) {
-      patient.v4WindowStart = new Date(completeV3Dto.v4WindowStart);
-      patient.v4WindowEnd = new Date(completeV3Dto.v4WindowEnd);
-    } else {
-      const v3Date = patient.v3CompletedAt;
-      const v4Start = new Date(v3Date);
-      v4Start.setDate(v4Start.getDate() + STAGE_CONFIG.V3_TO_V4_DAYS - STAGE_CONFIG.V3_TO_V4_TOLERANCE);
-
-      const v4End = new Date(v3Date);
-      v4End.setDate(v4End.getDate() + STAGE_CONFIG.V3_TO_V4_DAYS + STAGE_CONFIG.V3_TO_V4_TOLERANCE);
-
-      patient.v4WindowStart = v4Start;
-      patient.v4WindowEnd = v4End;
-    }
-
-    patient.currentStage = 'V4';
     patient.pendingReview = false;
 
     const savedPatient = await this.patientRepository.save(patient);
 
-    // 发送审核通过消息,包含V4阶段必填项
-    const v4Requirements = getStageRequirementsDescription('V4');
-    await this.pushMessageService.notifyPatientStageApproved(
+    // 发送审核通过消息
+    await this.pushMessageService.createAuditResultMessage(
       patient.userId,
       'V3',
-      'V4',
-      v4Requirements,
+      'approved',
+      completeV3Dto.reviewNotes || 'V3阶段审核通过',
     );
 
     return savedPatient;
@@ -814,6 +864,196 @@ export class PatientService {
       patient.pendingReview = true;
       await this.patientRepository.save(patient);
     }
+  }
+
+  /**
+   * 手动推进阶段（用于测试或特殊情况）
+   * 跳过必填项检查，直接推进到目标阶段
+   */
+  async advanceStage(
+    patientId: number,
+    targetStage: 'V2' | 'V3' | 'V4' | 'completed',
+    remark?: string,
+  ): Promise<Patient> {
+    const patient = await this.findOne(patientId);
+
+    const stageOrder = ['V1', 'V2', 'V3', 'V4', 'completed'];
+    const currentIndex = stageOrder.indexOf(patient.currentStage);
+    const targetIndex = stageOrder.indexOf(targetStage);
+
+    if (targetIndex <= currentIndex) {
+      throw new BadRequestException(
+        `目标阶段 ${targetStage} 必须在当前阶段 ${patient.currentStage} 之后`,
+      );
+    }
+
+    const now = new Date();
+
+    // 根据目标阶段更新相应的完成时间和时间窗口
+    if (currentIndex < 1 && targetIndex >= 1) {
+      // 需要完成V1
+      patient.v1CompletedAt = now;
+      patient.v2WindowStart = now;
+      patient.v2WindowEnd = new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000); // +2天
+    }
+    if (currentIndex < 2 && targetIndex >= 2) {
+      // 需要完成V2
+      patient.v2CompletedAt = now;
+      patient.v3WindowStart = now;
+      patient.v3WindowEnd = new Date(now.getTime() + 4 * 24 * 60 * 60 * 1000); // +4天
+    }
+    if (currentIndex < 3 && targetIndex >= 3) {
+      // 需要完成V3
+      patient.v3CompletedAt = now;
+      patient.v4WindowStart = now;
+      patient.v4WindowEnd = new Date(now.getTime() + 4 * 24 * 60 * 60 * 1000); // +4天
+    }
+    if (targetIndex === 4) {
+      // 完成V4
+      patient.v4CompletedAt = now;
+      patient.status = 'completed';
+    }
+
+    patient.currentStage = targetStage;
+    patient.pendingReview = false;
+
+    const savedPatient = await this.patientRepository.save(patient);
+
+    console.log(`[手动推进阶段] 患者ID: ${patientId}, 从 ${stageOrder[currentIndex]} 推进到 ${targetStage}, 备注: ${remark || '无'}`);
+
+    return savedPatient;
+  }
+
+  /**
+   * 检查提前退出条件
+   * 提前退出需要完成4个量表: AIS, ESS, GAD7, PHQ9
+   */
+  async checkWithdrawRequirements(patientId: number) {
+    const patient = await this.findOne(patientId);
+
+    if (patient.status === 'withdrawn') {
+      return {
+        canWithdraw: false,
+        missingScales: [],
+        completedScales: [],
+        message: '患者已经退出',
+      };
+    }
+
+    if (patient.status === 'completed') {
+      return {
+        canWithdraw: false,
+        missingScales: [],
+        completedScales: [],
+        message: '患者已完成所有阶段，无需退出',
+      };
+    }
+
+    // 提前退出需要完成的量表
+    const requiredScales = ['AIS', 'ESS', 'GAD7', 'PHQ9'];
+    const missingScales: string[] = [];
+    const completedScales: string[] = [];
+
+    // 检查当前阶段的量表是否完成
+    const stage = patient.currentStage as 'V1' | 'V2' | 'V3' | 'V4';
+
+    for (const scaleCode of requiredScales) {
+      const scaleConfig = await this.scaleConfigRepository.findOne({
+        where: { code: scaleCode as any },
+      });
+
+      if (!scaleConfig) {
+        missingScales.push(scaleCode);
+        continue;
+      }
+
+      const scaleRecord = await this.scaleRecordRepository.findOne({
+        where: { patientId, stage, scaleId: scaleConfig.id },
+      });
+
+      if (scaleRecord) {
+        completedScales.push(scaleCode);
+      } else {
+        missingScales.push(scaleCode);
+      }
+    }
+
+    const canWithdraw = missingScales.length === 0;
+
+    return {
+      canWithdraw,
+      missingScales,
+      completedScales,
+      message: canWithdraw
+        ? '可以提前退出'
+        : `需要先完成以下量表: ${missingScales.join('、')}`,
+    };
+  }
+
+  /**
+   * 患者提前退出
+   * 退出前必须完成4个量表: AIS, ESS, GAD7, PHQ9
+   */
+  async withdrawPatient(patientId: number, reason: string): Promise<Patient> {
+    const patient = await this.findOne(patientId);
+
+    if (patient.status === 'withdrawn') {
+      throw new BadRequestException('患者已经退出');
+    }
+
+    if (patient.status === 'completed') {
+      throw new BadRequestException('患者已完成所有阶段，无需退出');
+    }
+
+    // 检查是否满足退出条件
+    const checkResult = await this.checkWithdrawRequirements(patientId);
+    if (!checkResult.canWithdraw) {
+      throw new BadRequestException(checkResult.message);
+    }
+
+    // 记录退出信息
+    patient.status = 'withdrawn';
+    patient.withdrawnAt = new Date();
+    patient.withdrawReason = reason;
+    patient.withdrawStage = patient.currentStage as 'V1' | 'V2' | 'V3' | 'V4';
+    patient.pendingReview = false;
+
+    const savedPatient = await this.patientRepository.save(patient);
+
+    // 发送退出通知给医生
+    const doctor = await this.doctorRepository.findOne({
+      where: { id: patient.doctorId },
+    });
+    if (doctor) {
+      await this.pushMessageService.sendPushAsync(doctor.userId, {
+        userId: doctor.userId,
+        type: 'system_notice',
+        title: '患者提前退出通知',
+        content: `患者 ${patient.user?.name || '未知'} 已在${this.getStageDisplayName(patient.withdrawStage)}阶段提前退出。退出原因：${reason}`,
+        data: {
+          patientId: patient.id,
+          navigateTo: '/pages/doctor/patient-detail',
+        },
+      });
+    }
+
+    console.log(`[提前退出] 患者ID: ${patientId}, 退出阶段: ${patient.withdrawStage}, 原因: ${reason}`);
+
+    return savedPatient;
+  }
+
+  /**
+   * 获取阶段显示名称
+   */
+  private getStageDisplayName(stage: string): string {
+    const stageNames: Record<string, string> = {
+      V1: '第一阶段(V1)',
+      V2: '第二阶段(V2)',
+      V3: '第三阶段(V3)',
+      V4: '第四阶段(V4)',
+      completed: '已完成',
+    };
+    return stageNames[stage] || stage;
   }
 
   /**

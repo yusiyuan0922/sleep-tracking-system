@@ -69,6 +69,12 @@ const router = createRouter({
           component: () => import('../views/medical-file/Index.vue'),
           meta: { title: '病历文件' },
         },
+        {
+          path: 'export',
+          name: 'Export',
+          component: () => import('../views/export/Index.vue'),
+          meta: { title: '数据导出' },
+        },
       ],
     },
   ],

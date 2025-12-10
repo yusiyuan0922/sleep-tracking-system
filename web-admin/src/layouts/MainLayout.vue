@@ -42,6 +42,11 @@
           <el-menu-item index="/adverse-event">不良事件</el-menu-item>
           <el-menu-item index="/medical-file">病历文件</el-menu-item>
         </el-sub-menu>
+
+        <el-menu-item index="/export">
+          <el-icon><Download /></el-icon>
+          <span>数据导出</span>
+        </el-menu-item>
       </el-menu>
     </el-aside>
 

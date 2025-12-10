@@ -226,6 +226,29 @@ const formatTime = (dateStr: string) => {
   }
 };
 
+// tabbar 页面列表
+const tabbarPages = [
+  '/pages/index/index',
+  '/pages/scale/list',
+  '/pages/medication/list',
+  '/pages/profile/index',
+];
+
+// 判断是否是 tabbar 页面
+const isTabbarPage = (url: string) => {
+  const path = url.split('?')[0]; // 去除查询参数
+  return tabbarPages.some(tabPath => path === tabPath);
+};
+
+// 智能导航：自动判断使用 navigateTo 还是 switchTab
+const smartNavigate = (url: string) => {
+  if (isTabbarPage(url)) {
+    uni.switchTab({ url: url.split('?')[0] }); // switchTab 不支持参数
+  } else {
+    uni.navigateTo({ url });
+  }
+};
+
 // 点击消息
 const handleMessageClick = async (msg: MessageDetail) => {
   // 标记为已读
@@ -235,6 +258,11 @@ const handleMessageClick = async (msg: MessageDetail) => {
       msg.isRead = true;
       unreadCount.value = Math.max(0, unreadCount.value - 1);
       uni.$emit('message-read');
+
+      // 如果当前在"未读"标签下，从列表中移除该消息
+      if (activeTab.value === 'unread') {
+        messages.value = messages.value.filter(m => m.id !== msg.id);
+      }
     } catch (error) {
       console.error('标记已读失败:', error);
     }
@@ -242,20 +270,20 @@ const handleMessageClick = async (msg: MessageDetail) => {
 
   // 根据消息类型跳转
   // 优先使用带参数的 navigateTo，否则根据数据中的 ID 构建 URL
-  const navigateTo = msg.data?.navigateTo;
+  const targetUrl = msg.data?.navigateTo;
 
-  if (navigateTo && navigateTo.includes('?')) {
-    // navigateTo 已经包含参数，直接使用
-    uni.navigateTo({ url: navigateTo });
+  if (targetUrl && targetUrl.includes('?')) {
+    // targetUrl 已经包含参数，直接使用
+    smartNavigate(targetUrl);
   } else if (msg.data?.aeId) {
     // 不良事件详情
-    uni.navigateTo({ url: `/pages/adverse-event/detail?id=${msg.data.aeId}` });
+    smartNavigate(`/pages/adverse-event/detail?id=${msg.data.aeId}`);
   } else if (msg.data?.patientId) {
     // 患者详情
-    uni.navigateTo({ url: `/pages/doctor/patient-detail?id=${msg.data.patientId}` });
-  } else if (navigateTo) {
-    // navigateTo 不带参数，但也没有其他 ID，直接跳转
-    uni.navigateTo({ url: navigateTo });
+    smartNavigate(`/pages/doctor/patient-detail?id=${msg.data.patientId}`);
+  } else if (targetUrl) {
+    // targetUrl 不带参数，但也没有其他 ID，直接跳转
+    smartNavigate(targetUrl);
   }
 };
 
@@ -268,6 +296,12 @@ const handleMarkAllRead = async () => {
     });
     unreadCount.value = 0;
     uni.$emit('message-read');
+
+    // 如果当前在"未读"标签下，清空列表
+    if (activeTab.value === 'unread') {
+      messages.value = [];
+    }
+
     uni.showToast({
       title: '已全部标记为已读',
       icon: 'success',

@@ -82,7 +82,8 @@
       <view
         v-for="record in scaleRecords"
         :key="record.id"
-        class="scale-record-card"
+        class="scale-record-card clickable"
+        @click="goToScaleDetail(record.id)"
       >
         <view class="record-header">
           <text class="scale-name">{{ record.scaleCode }}</text>
@@ -90,7 +91,10 @@
         </view>
         <view class="record-info">
           <text class="info-text">阶段: {{ record.stage }}</text>
-          <text class="info-text">时间: {{ record.createdAt }}</text>
+          <text class="info-text">时间: {{ formatDateTime(record.createdAt) }}</text>
+        </view>
+        <view class="record-arrow">
+          <text>›</text>
         </view>
       </view>
 
@@ -126,22 +130,25 @@
 
     <!-- 病历文件标签 -->
     <view v-if="currentTab === 'medical-files'" class="tab-content">
-      <view
-        v-for="file in medicalFiles"
-        :key="file.id"
-        class="file-card"
-        @click="previewFile(file)"
-      >
-        <view class="file-icon">
-          <text>{{ getFileIcon(file.fileType) }}</text>
-        </view>
-        <view class="file-info">
-          <text class="file-name">{{ file.fileName }}</text>
-          <text class="file-meta">{{ file.stage }} | {{ formatFileSize(file.fileSize) }}</text>
-          <text class="file-time">{{ file.createdAt }}</text>
-        </view>
-        <view class="file-arrow">
-          <text>›</text>
+      <view class="files-grid">
+        <view
+          v-for="file in medicalFiles"
+          :key="file.id"
+          class="file-card-grid"
+          @click="previewFile(file)"
+        >
+          <!-- 图片类型显示缩略图 -->
+          <view v-if="file.fileType === 'image'" class="file-thumbnail">
+            <image :src="file.fileUrl" mode="aspectFill" class="thumbnail-image" />
+          </view>
+          <!-- 非图片类型显示图标 -->
+          <view v-else class="file-icon-large">
+            <text>{{ getFileIcon(file.fileType) }}</text>
+          </view>
+          <view class="file-info-grid">
+            <text class="file-name-grid">{{ getDisplayFileName(file) }}</text>
+            <text class="file-meta-grid">{{ file.stage }} | {{ formatFileSize(file.fileSize) }}</text>
+          </view>
         </view>
       </view>
 
@@ -312,6 +319,20 @@ const formatFileSize = (bytes: number) => {
   return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
 };
 
+// 获取显示用的文件名
+const getDisplayFileName = (file: any) => {
+  // 如果文件名是OSS格式（UUID或无意义的字符串），生成友好的名称
+  const fileName = file.fileName || '';
+  // 判断是否是OSS格式的文件名（通常是UUID或特殊编码）
+  if (!fileName || fileName.length > 50 || /^[a-f0-9-]{30,}/.test(fileName)) {
+    // 根据文件类型生成友好名称
+    const typeLabel = file.fileType === 'image' ? '病历图片' : '病历文件';
+    const dateStr = file.createdAt ? new Date(file.createdAt).toLocaleDateString('zh-CN') : '';
+    return `${typeLabel}_${file.stage}${dateStr ? '_' + dateStr : ''}`;
+  }
+  return fileName;
+};
+
 // 预览文件
 const previewFile = (file: any) => {
   if (!file.fileUrl) {
@@ -320,9 +341,13 @@ const previewFile = (file: any) => {
   }
 
   // 图片类型直接预览
-  if (file.fileType?.includes('image')) {
+  if (file.fileType === 'image') {
+    // 获取所有图片文件的URL用于预览时滑动
+    const imageUrls = medicalFiles.value
+      .filter((f: any) => f.fileType === 'image')
+      .map((f: any) => f.fileUrl);
     uni.previewImage({
-      urls: [file.fileUrl],
+      urls: imageUrls.length > 0 ? imageUrls : [file.fileUrl],
       current: file.fileUrl,
     });
   } else {
@@ -577,6 +602,25 @@ const goToUploadFile = () => {
   uni.navigateTo({
     url: `/pages/medical-file/upload?patientId=${patientId.value}&stage=${patientInfo.value.currentStage}`,
   });
+};
+
+// 查看量表记录详情
+const goToScaleDetail = (recordId: number) => {
+  uni.navigateTo({
+    url: `/pages/scale/detail?id=${recordId}`,
+  });
+};
+
+// 格式化日期时间
+const formatDateTime = (dateStr: string) => {
+  if (!dateStr) return '-';
+  const date = new Date(dateStr);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hour = String(date.getHours()).padStart(2, '0');
+  const minute = String(date.getMinutes()).padStart(2, '0');
+  return `${year}-${month}-${day} ${hour}:${minute}`;
 };
 
 // 通过审核
@@ -900,6 +944,24 @@ onShow(() => {
   margin-bottom: 20rpx;
 }
 
+.scale-record-card.clickable {
+  position: relative;
+  padding-right: 60rpx;
+}
+
+.scale-record-card.clickable:active {
+  background-color: #f5f5f5;
+}
+
+.record-arrow {
+  position: absolute;
+  right: 20rpx;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 40rpx;
+  color: #cccccc;
+}
+
 /* 病历文件卡片 */
 .file-card {
   display: flex;
@@ -947,6 +1009,63 @@ onShow(() => {
 .file-arrow {
   font-size: 32rpx;
   color: #cccccc;
+}
+
+/* 病历文件网格布局 */
+.files-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20rpx;
+}
+
+.file-card-grid {
+  width: calc(50% - 10rpx);
+  background-color: #ffffff;
+  border-radius: 16rpx;
+  overflow: hidden;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.06);
+}
+
+.file-thumbnail {
+  width: 100%;
+  height: 200rpx;
+  background-color: #f5f5f5;
+}
+
+.thumbnail-image {
+  width: 100%;
+  height: 100%;
+}
+
+.file-icon-large {
+  width: 100%;
+  height: 200rpx;
+  background-color: #f0f5ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 80rpx;
+}
+
+.file-info-grid {
+  padding: 20rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.file-name-grid {
+  font-size: 26rpx;
+  font-weight: 500;
+  color: #333333;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-meta-grid {
+  font-size: 22rpx;
+  color: #999999;
 }
 
 .record-header,

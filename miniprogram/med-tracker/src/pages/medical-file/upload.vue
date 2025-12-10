@@ -173,6 +173,9 @@ const handleSubmit = async () => {
 
       try {
         // 使用 Promise 包装 uni.uploadFile
+        // 生成有意义的文件名
+        const originalFileName = `病历图片_${new Date().toISOString().slice(0, 10)}_${i + 1}.jpg`;
+
         await new Promise((resolve, reject) => {
           uni.uploadFile({
             url: `${config.baseURL}/upload/single`,
@@ -180,6 +183,7 @@ const handleSubmit = async () => {
             name: 'file',
             formData: {
               patientId: patientId.toString(),
+              originalFileName: originalFileName,
             },
             header: {
               'Authorization': `Bearer ${uni.getStorageSync(config.tokenKey)}`,

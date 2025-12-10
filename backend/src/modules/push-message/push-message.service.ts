@@ -84,16 +84,26 @@ export class PushMessageService {
   /**
    * 获取用户的推送消息
    */
-  async findByUser(userId: number, page = 1, pageSize = 10, type?: string, isRead?: boolean) {
+  async findByUser(userId: number, page = 1, pageSize = 10, type?: string, isRead?: boolean | string) {
+    console.log('[findByUser] params:', { userId, page, pageSize, type, isRead, isReadType: typeof isRead });
+
     const where: any = { userId };
 
     if (type) {
       where.type = type;
     }
 
-    if (isRead !== undefined) {
-      where.isRead = isRead;
+    // 处理 isRead 参数 - 可能是 boolean 或 string
+    if (isRead !== undefined && isRead !== null && isRead !== '') {
+      if (typeof isRead === 'string') {
+        // 字符串 'false' 或 '0' 转换为 false，'true' 或 '1' 转换为 true
+        where.isRead = isRead === 'true' || isRead === '1';
+      } else if (typeof isRead === 'boolean') {
+        where.isRead = isRead;
+      }
     }
+
+    console.log('[findByUser] where:', where);
 
     const [items, total] = await this.pushMessageRepository.findAndCount({
       where,
@@ -101,6 +111,8 @@ export class PushMessageService {
       skip: (page - 1) * pageSize,
       take: pageSize,
     });
+
+    console.log('[findByUser] result:', { total, itemsCount: items.length });
 
     return {
       data: items,

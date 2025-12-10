@@ -26,7 +26,7 @@
           <text class="info-item">AE序号: {{ event.aeNumber }}</text>
         </view>
         <view class="event-info">
-          <text class="info-item">开始时间: {{ formatDate(event.onsetDate) }}</text>
+          <text class="info-item">开始时间: {{ formatDate(event.occurredAt) }}</text>
         </view>
         <view v-if="!event.isOngoing && event.endDate" class="event-info">
           <text class="info-item">结束时间: {{ formatDate(event.endDate) }}</text>

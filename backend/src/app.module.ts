@@ -21,6 +21,8 @@ import { OperationLogModule } from './modules/operation-log/operation-log.module
 import { PushMessageModule } from './modules/push-message/push-message.module';
 import { SystemConfigModule } from './modules/system-config/system-config.module';
 import { ScheduleTasksModule } from './modules/schedule/schedule.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { ExportModule } from './modules/export/export.module';
 
 @Module({
   imports: [
@@ -79,6 +81,10 @@ import { ScheduleTasksModule } from './modules/schedule/schedule.module';
     SystemConfigModule,
 
     ScheduleTasksModule,
+
+    DashboardModule,
+
+    ExportModule,
   ],
   controllers: [],
   providers: [

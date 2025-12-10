@@ -185,3 +185,43 @@ export class CompleteV3Dto {
   @IsString()
   reviewNotes?: string;
 }
+
+// 手动推进阶段DTO (用于测试/特殊情况)
+export class AdvanceStageDto {
+  @ApiProperty({
+    description: '目标阶段',
+    enum: ['V2', 'V3', 'V4', 'completed'],
+    example: 'V2'
+  })
+  @IsEnum(['V2', 'V3', 'V4', 'completed'])
+  @IsNotEmpty()
+  targetStage: 'V2' | 'V3' | 'V4' | 'completed';
+
+  @ApiPropertyOptional({ description: '备注说明' })
+  @IsString()
+  @IsOptional()
+  remark?: string;
+}
+
+// 提前退出DTO
+export class WithdrawPatientDto {
+  @ApiProperty({ description: '退出原因' })
+  @IsString()
+  @IsNotEmpty()
+  reason: string;
+}
+
+// 检查提前退出条件DTO (返回值)
+export class WithdrawCheckResult {
+  @ApiProperty({ description: '是否可以退出' })
+  canWithdraw: boolean;
+
+  @ApiProperty({ description: '缺少的量表列表' })
+  missingScales: string[];
+
+  @ApiProperty({ description: '已完成的量表列表' })
+  completedScales: string[];
+
+  @ApiProperty({ description: '提示信息' })
+  message: string;
+}

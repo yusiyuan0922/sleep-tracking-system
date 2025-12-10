@@ -127,6 +127,22 @@ export class Patient {
   })
   pendingReview: boolean;
 
+  // 提前退出相关字段
+  @Column({ type: 'timestamp', nullable: true, name: 'withdrawn_at', comment: '退出时间' })
+  withdrawnAt: Date;
+
+  @Column({ type: 'text', nullable: true, name: 'withdraw_reason', comment: '退出原因' })
+  withdrawReason: string;
+
+  @Column({
+    type: 'varchar',
+    length: 10,
+    nullable: true,
+    name: 'withdraw_stage',
+    comment: '退出时所在阶段',
+  })
+  withdrawStage: 'V1' | 'V2' | 'V3' | 'V4';
+
   @CreateDateColumn({ name: 'created_at', comment: '创建时间' })
   createdAt: Date;
 

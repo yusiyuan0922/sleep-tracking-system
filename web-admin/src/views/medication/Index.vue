@@ -37,16 +37,15 @@
 
       <el-table :data="tableData" v-loading="loading" border>
         <el-table-column prop="id" label="ID" width="80" />
-        <el-table-column prop="patient.name" label="患者" width="100" />
         <el-table-column prop="stage" label="阶段" width="80" />
-        <el-table-column prop="drugName" label="药品名称" min-width="150" />
-        <el-table-column prop="specification" label="规格" width="100" />
+        <el-table-column prop="medicationName" label="药品名称" min-width="150" />
         <el-table-column prop="dosage" label="剂量" width="80" />
         <el-table-column prop="unit" label="单位" width="80" />
         <el-table-column prop="frequency" label="频次" width="100" />
         <el-table-column prop="route" label="给药途径" width="100" />
         <el-table-column prop="startDate" label="开始日期" width="120" />
         <el-table-column prop="endDate" label="结束日期" width="120" />
+        <el-table-column prop="duration" label="用药天数" width="100" />
         <el-table-column label="操作" width="150" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" size="small" @click="handleView(row)">
@@ -74,16 +73,16 @@
     <!-- 查看详情对话框 -->
     <el-dialog v-model="dialogVisible" title="用药记录详情" width="600px">
       <el-descriptions :column="2" border>
-        <el-descriptions-item label="患者">{{ detailData.patient?.name }}</el-descriptions-item>
         <el-descriptions-item label="阶段">{{ detailData.stage }}</el-descriptions-item>
-        <el-descriptions-item label="药品名称">{{ detailData.drugName }}</el-descriptions-item>
-        <el-descriptions-item label="规格">{{ detailData.specification }}</el-descriptions-item>
+        <el-descriptions-item label="药品名称">{{ detailData.medicationName }}</el-descriptions-item>
         <el-descriptions-item label="剂量">{{ detailData.dosage }} {{ detailData.unit }}</el-descriptions-item>
         <el-descriptions-item label="频次">{{ detailData.frequency }}</el-descriptions-item>
         <el-descriptions-item label="给药途径">{{ detailData.route }}</el-descriptions-item>
         <el-descriptions-item label="开始日期">{{ detailData.startDate }}</el-descriptions-item>
         <el-descriptions-item label="结束日期">{{ detailData.endDate || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="备注" :span="2">{{ detailData.remark || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="用药天数">{{ detailData.duration || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="适应症">{{ detailData.indication || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="备注">{{ detailData.remark || '-' }}</el-descriptions-item>
       </el-descriptions>
     </el-dialog>
   </div>
@@ -118,7 +117,7 @@ const fetchData = async () => {
       pageSize: pagination.pageSize,
       ...searchForm,
     });
-    tableData.value = res.items || [];
+    tableData.value = res.list || [];
     pagination.total = res.total || 0;
   } catch (error: any) {
     ElMessage.error(error.message || '获取数据失败');

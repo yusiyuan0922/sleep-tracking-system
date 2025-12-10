@@ -39,10 +39,30 @@ export class PushMessageController {
   @ApiOperation({ summary: '获取我的消息列表' })
   async getMyMessages(
     @CurrentUser() user: any,
-    @Query() query: QueryPushMessageDto,
+    @Query('page') page?: string,
+    @Query('pageSize') pageSize?: string,
+    @Query('type') type?: string,
+    @Query('isRead') isReadParam?: string,
   ) {
-    const { page = 1, pageSize = 10, type, isRead } = query;
-    return this.pushMessageService.findByUser(user.userId, page, pageSize, type, isRead);
+    console.log('[getMyMessages] raw isReadParam:', isReadParam, 'type:', typeof isReadParam);
+
+    // 手动解析 isRead 参数
+    let isRead: boolean | undefined;
+    if (isReadParam === 'true' || isReadParam === '1') {
+      isRead = true;
+    } else if (isReadParam === 'false' || isReadParam === '0') {
+      isRead = false;
+    }
+
+    console.log('[getMyMessages] parsed isRead:', isRead);
+
+    return this.pushMessageService.findByUser(
+      user.userId,
+      parseInt(page || '1', 10),
+      parseInt(pageSize || '10', 10),
+      type,
+      isRead,
+    );
   }
 
   @Get('unread-count')

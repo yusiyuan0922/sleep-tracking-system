@@ -28,9 +28,9 @@ docker-compose down
 docker-compose build backend
 docker-compose up -d backend
 
-# Rebuild and restart web-admin after code changes
-docker-compose build web-admin
-docker-compose up -d web-admin
+# Rebuild and restart web-admin after code changes (使用挂载方式，见下方 Web Admin Development)
+cd web-admin && npm run build
+docker-compose restart web-admin
 
 # View logs
 docker logs sleep-backend --tail 50
@@ -110,6 +110,25 @@ The `init-scales.sql` script initializes 6 clinical scales with complete questio
 - **HAMD** (汉密尔顿抑郁量表) - 17 questions, doctor assessment
 
 ### Web Admin Development
+
+#### Quick Update After Code Changes (Recommended)
+Web Admin 使用挂载方式部署，本地构建后直接生效：
+
+```bash
+# 1. 本地构建
+cd web-admin
+npm run build
+
+# 2. 重启容器加载新文件
+docker-compose restart web-admin
+
+# 查看日志确认
+docker logs sleep-web-admin --tail 20
+```
+
+**原理：** `web-admin/dist` 目录挂载到 nginx 容器的 `/usr/share/nginx/html`，本地构建后重启容器即可生效，无需重新构建镜像。
+
+#### Local Development (本地开发)
 ```bash
 # From project root
 npm run dev:web
@@ -254,8 +273,8 @@ The `shared/` workspace contains type definitions and constants used across back
    - Web Admin: http://localhost:5173
    - MinIO Console: http://localhost:9001
 5. **After code changes**:
-   - Backend: `docker-compose build backend && docker-compose up -d backend`
-   - Web Admin: `docker-compose build web-admin && docker-compose up -d web-admin`
+   - Backend: `cd backend && npm run build && docker cp dist/. sleep-backend:/app/backend/dist/ && docker-compose restart backend`
+   - Web Admin: `cd web-admin && npm run build && docker-compose restart web-admin`
 6. **View logs**: `docker logs sleep-backend --tail 50`
 
 ### Local Development (Alternative)

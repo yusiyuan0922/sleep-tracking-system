@@ -17,6 +17,8 @@ import {
   CompleteV1Dto,
   CompleteV2Dto,
   CompleteV3Dto,
+  AdvanceStageDto,
+  WithdrawPatientDto,
 } from './dto/patient.dto';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -140,5 +142,36 @@ export class PatientController {
   @ApiOperation({ summary: '患者提交当前阶段资料进行审核' })
   async submitForReview(@Param('id', ParseIntPipe) id: number) {
     return this.patientService.submitForReview(id);
+  }
+
+  @Post(':id/advance-stage')
+  @Roles('super_admin', 'admin', 'doctor')
+  @ApiOperation({ summary: '手动推进阶段(用于测试或特殊情况，跳过必填项检查)' })
+  async advanceStage(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() advanceStageDto: AdvanceStageDto,
+  ) {
+    return this.patientService.advanceStage(
+      id,
+      advanceStageDto.targetStage,
+      advanceStageDto.remark,
+    );
+  }
+
+  @Get(':id/withdraw-check')
+  @Roles('super_admin', 'admin', 'doctor', 'patient')
+  @ApiOperation({ summary: '检查患者是否满足提前退出条件' })
+  async checkWithdrawRequirements(@Param('id', ParseIntPipe) id: number) {
+    return this.patientService.checkWithdrawRequirements(id);
+  }
+
+  @Post(':id/withdraw')
+  @Roles('super_admin', 'admin', 'doctor')
+  @ApiOperation({ summary: '患者提前退出(需要先完成AIS、ESS、GAD7、PHQ9量表)' })
+  async withdrawPatient(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() withdrawDto: WithdrawPatientDto,
+  ) {
+    return this.patientService.withdrawPatient(id, withdrawDto.reason);
   }
 }

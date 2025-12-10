@@ -129,15 +129,21 @@ export class AdverseEventService {
       isSerious: event.isSerious,
       stage: event.stage,
       occurredAt: event.onsetDate,
+      onsetDate: event.onsetDate,
       isOngoing: event.isOngoing,
       endDate: event.endDate,
       description: event.description,
       relatedDrug: event.relatedDrug,
       relationship: event.causality, // 映射 causality 为 relationship
+      causality: event.causality,
       action: event.action,
       outcome: event.outcome,
       remark: event.remark,
       createdAt: event.createdAt,
+      patient: event.patient ? {
+        id: event.patient.id,
+        name: event.patient.user?.name || '-',
+      } : null,
     }));
 
     return {

@@ -66,6 +66,7 @@ export class UploadService {
   async uploadFile(
     file: Express.Multer.File,
     folder: string = 'general',
+    originalFileName?: string,
   ): Promise<{
     url: string;
     fileName: string;
@@ -128,7 +129,7 @@ export class UploadService {
 
       return {
         url,
-        fileName: file.originalname,
+        fileName: originalFileName || file.originalname,
         fileSize: file.size,
         fileType: this.getFileType(file.mimetype),
       };
